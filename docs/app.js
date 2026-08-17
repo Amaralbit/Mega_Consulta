@@ -20,6 +20,7 @@ const linkPortalOficial = document.getElementById('link-portal-oficial');
 const resultsSubtitle = document.getElementById('results-subtitle');
 const resultsTotalValue = document.getElementById('results-total-value');
 const debitosList = document.getElementById('debitos-list');
+const resultsAviso = document.getElementById('results-aviso');
 
 // URL oficial do Detran-GO onde o cidadão consulta débitos (IPVA, licenciamento,
 // multas) do veículo. É uma SPA protegida por reCAPTCHA — não automatizamos isso,
@@ -74,6 +75,13 @@ function formatarData(iso) {
 function renderResultados(dados) {
   resultsSubtitle.textContent = `Placa ${dados.placa} · Renavam ${dados.renavam}`;
   resultsTotalValue.textContent = formatarMoeda(dados.total);
+
+  if (dados.aviso) {
+    resultsAviso.textContent = `⚠️ ${dados.aviso}`;
+    resultsAviso.classList.remove('hidden');
+  } else {
+    resultsAviso.classList.add('hidden');
+  }
 
   debitosList.innerHTML = '';
   dados.debitos.forEach((debito) => {

@@ -500,6 +500,23 @@ body {
   white-space: nowrap;
 }
 
+.results-aviso {
+  color: #b45309 !important;
+  background: #fffbeb;
+  border: 1px solid #fde68a;
+  border-radius: var(--radius-sm);
+  padding: 10px 12px;
+  margin-bottom: 12px !important;
+}
+
+@media (prefers-color-scheme: dark) {
+  .results-aviso {
+    color: #fbbf24 !important;
+    background: #241d0d;
+    border-color: #4a3a12;
+  }
+}
+
 .hidden {
   display: none !important;
 }

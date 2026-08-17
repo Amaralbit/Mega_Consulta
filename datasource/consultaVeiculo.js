@@ -1,27 +1,40 @@
 const fs = require('fs');
 
 // ---------------------------------------------------------------------------
-// Integração real com a InfoSimples (produto "DETRAN/GO Débitos").
+// Integração com a InfoSimples — dois produtos diferentes, dois níveis de
+// esforço/custo pra ativar:
 //
-// IMPORTANTE — leia antes de ativar:
-// Esse produto exige credencial de DESPACHANTE credenciado no Detran-GO
-// (CPF + senha do sistema deles + certificado digital PKCS12), não apenas
-// uma chave de API simples. Sem essas 4 credenciais preenchidas no .env,
-// este módulo fica INATIVO de propósito e a aplicação usa o modo gratuito
-// de redirecionamento (ver server.js e docs/app.js).
+// 1) SEFAZ/GO/IPVA — só pede o token da conta (sem credencial de terceiro).
+//    Dá pra testar de graça: a InfoSimples dá ~R$100 de crédito ao criar
+//    conta (https://api.infosimples.com/cadastro, sem cartão). Só traz
+//    dados de IPVA — não inclui multas de trânsito nem licenciamento.
 //
-// A URL/parâmetros exatos abaixo são o padrão documentado publicamente pela
-// InfoSimples para esse produto (login_cpf, login_senha, pkcs12_cert,
-// pkcs12_pass, placa, renavam, token da conta) — mas NÃO foram testados
-// contra uma conta real. Confirme no painel da sua conta InfoSimples
-// (https://api.infosimples.com/) a URL exata do endpoint e o formato
-// esperado do certificado antes de contar com isso em produção.
+// 2) DETRAN/GO Débitos — exige credencial de despachante credenciado no
+//    Detran-GO (CPF + senha do sistema deles + certificado digital PKCS12),
+//    além do token. Traz o pacote completo (IPVA + licenciamento + multas),
+//    mas não tem como testar sem ter (ou conseguir) essa credencial — o
+//    crédito grátis da InfoSimples não resolve essa parte.
+//
+// Se as credenciais de despachante estiverem configuradas, usamos o produto
+// completo (2). Senão, se pelo menos o token estiver configurado, usamos o
+// produto de teste (1). Sem nenhum dos dois, fica tudo inativo e a
+// aplicação cai no modo gratuito de redirecionamento.
+//
+// URLs e nomes de parâmetro abaixo são os documentados publicamente pela
+// InfoSimples. A URL do IPVA (abaixo) já foi validada com uma chamada real
+// (token inválido de propósito, sem gastar crédito) — o endpoint respondeu
+// no formato esperado ({code, code_message}), confirmando URL e contrato de
+// erro. A URL do produto completo (DÉBITOS) ainda não foi testada contra
+// uma conta real — confirme no painel da sua conta antes de usar em
+// produção.
 // ---------------------------------------------------------------------------
 
-const INFOSIMPLES_API_URL =
+const IPVA_API_URL =
+  process.env.INFOSIMPLES_IPVA_API_URL || 'https://api.infosimples.com/api/v2/consultas/sefaz/go/ipva';
+const DEBITOS_API_URL =
   process.env.INFOSIMPLES_API_URL || 'https://api.infosimples.com/api/v2/consultas/detran/go/debitos';
 
-function estaConfigurado() {
+function despachanteConfigurado() {
   return Boolean(
     process.env.INFOSIMPLES_TOKEN &&
     process.env.INFOSIMPLES_LOGIN_CPF &&
@@ -29,6 +42,14 @@ function estaConfigurado() {
     process.env.INFOSIMPLES_PKCS12_CERT_PATH &&
     process.env.INFOSIMPLES_PKCS12_PASS
   );
+}
+
+function ipvaConfigurado() {
+  return Boolean(process.env.INFOSIMPLES_TOKEN);
+}
+
+function estaConfigurado() {
+  return despachanteConfigurado() || ipvaConfigurado();
 }
 
 function certificadoBase64() {
@@ -63,21 +84,22 @@ function normalizarValor(item) {
   return 0;
 }
 
-async function consultarNaInfoSimples({ placa, renavam }) {
-  const body = new URLSearchParams({
-    token: process.env.INFOSIMPLES_TOKEN,
-    login_cpf: process.env.INFOSIMPLES_LOGIN_CPF,
-    login_senha: process.env.INFOSIMPLES_LOGIN_SENHA,
-    pkcs12_cert: certificadoBase64(),
-    pkcs12_pass: process.env.INFOSIMPLES_PKCS12_PASS,
-    placa,
-    renavam,
-  });
+function itensParaDebitos(itens) {
+  return itens.map((item) => ({
+    tipo: classificarTipo(item.descricao),
+    descricao: item.descricao || `Débito ${item.exercicio || ''}`.trim(),
+    vencimento: formatarVencimentoParaISO(item.vencimento),
+    valor: normalizarValor(item),
+    guia: item.codigo_barras || item.guia || null,
+    boletoUrl: item.boleto_pdf_url || null,
+  }));
+}
 
-  const resposta = await fetch(INFOSIMPLES_API_URL, {
+async function chamarInfoSimples(url, params) {
+  const resposta = await fetch(url, {
     method: 'POST',
     headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
-    body,
+    body: new URLSearchParams(params),
   });
 
   if (!resposta.ok) {
@@ -93,27 +115,44 @@ async function consultarNaInfoSimples({ placa, renavam }) {
   if (!dados) {
     throw new Error('Nenhum dado retornado pela InfoSimples para este veículo.');
   }
+  return dados;
+}
 
-  const itens = dados.debitos || dados.guias || [];
-  const debitos = itens.map((item) => ({
-    tipo: classificarTipo(item.descricao),
-    descricao: item.descricao || `Débito ${item.exercicio || ''}`.trim(),
-    vencimento: formatarVencimentoParaISO(item.vencimento),
-    valor: normalizarValor(item),
-    guia: item.codigo_barras || item.guia || null,
-    boletoUrl: item.boleto_pdf_url || null,
-  }));
+async function consultarDebitosCompleto({ placa, renavam }) {
+  const dados = await chamarInfoSimples(DEBITOS_API_URL, {
+    token: process.env.INFOSIMPLES_TOKEN,
+    login_cpf: process.env.INFOSIMPLES_LOGIN_CPF,
+    login_senha: process.env.INFOSIMPLES_LOGIN_SENHA,
+    pkcs12_cert: certificadoBase64(),
+    pkcs12_pass: process.env.INFOSIMPLES_PKCS12_PASS,
+    placa,
+    renavam,
+  });
 
-  const total = Number(debitos.reduce((acc, d) => acc + d.valor, 0).toFixed(2));
+  const debitos = itensParaDebitos(dados.debitos || dados.guias || []);
+  return { debitos, escopo: 'completo' };
+}
 
-  return { debitos, total };
+async function consultarApenasIpva({ placa, renavam }) {
+  const dados = await chamarInfoSimples(IPVA_API_URL, {
+    token: process.env.INFOSIMPLES_TOKEN,
+    placa,
+    renavam,
+  });
+
+  const debitos = itensParaDebitos(dados.guias || dados.debitos || []);
+  return {
+    debitos,
+    escopo: 'ipva',
+    aviso: 'Este teste traz só o IPVA. Multas de trânsito e licenciamento exigem o produto completo (com credencial de despachante).',
+  };
 }
 
 /**
  * Consulta débitos de um veículo.
  *
- * Retorna { configurado: false } quando as credenciais da InfoSimples não
- * estão definidas no .env — quem chama deve, nesse caso, cair no fluxo
+ * Retorna { configurado: false } quando nenhuma credencial da InfoSimples
+ * está definida no .env — quem chama deve, nesse caso, cair no fluxo
  * gratuito de redirecionamento pro portal oficial.
  */
 async function consultarVeiculo({ estado, placa, renavam }) {
@@ -121,7 +160,11 @@ async function consultarVeiculo({ estado, placa, renavam }) {
     return { configurado: false };
   }
 
-  const { debitos, total } = await consultarNaInfoSimples({ placa, renavam });
+  const { debitos, escopo, aviso } = despachanteConfigurado()
+    ? await consultarDebitosCompleto({ placa, renavam })
+    : await consultarApenasIpva({ placa, renavam });
+
+  const total = Number(debitos.reduce((acc, d) => acc + d.valor, 0).toFixed(2));
 
   return {
     configurado: true,
@@ -130,8 +173,10 @@ async function consultarVeiculo({ estado, placa, renavam }) {
     renavam,
     debitos,
     total,
+    escopo,
+    aviso,
     fonte: 'infosimples',
   };
 }
 
-module.exports = { consultarVeiculo, estaConfigurado };
+module.exports = { consultarVeiculo, estaConfigurado, despachanteConfigurado, ipvaConfigurado };
