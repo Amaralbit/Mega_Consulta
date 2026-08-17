@@ -67,6 +67,30 @@
           <p id="error-message"></p>
         </div>
 
+        <div class="state-box hidden" id="loading-state">
+          <div class="state-icon spin">⏳</div>
+          <h2>Consultando…</h2>
+          <p>Só um instante.</p>
+        </div>
+
+        <div class="results-box hidden" id="results-state">
+          <div class="results-header">
+            <div>
+              <h2>Débitos encontrados</h2>
+              <p class="results-subtitle" id="results-subtitle"></p>
+            </div>
+            <div class="results-total">
+              <span class="results-total-label">Total geral</span>
+              <span class="results-total-value" id="results-total-value"></span>
+            </div>
+          </div>
+          <ul class="debitos-list" id="debitos-list"></ul>
+          <p class="disclaimer">
+            Esses valores vêm direto do Detran-GO via consulta autorizada. Pra pagar, use o boleto/PIX (DAE)
+            oficial de cada guia — este site não processa pagamento de débito estadual.
+          </p>
+        </div>
+
         <div class="state-box redirect-box hidden" id="redirect-state">
           <div class="state-icon">✅</div>
           <h2>Tudo pronto!</h2>
