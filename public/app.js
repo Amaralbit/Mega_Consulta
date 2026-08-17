@@ -11,12 +11,17 @@ const loadingState = document.getElementById('loading-state');
 const errorState = document.getElementById('error-state');
 const errorMessage = document.getElementById('error-message');
 const resultsState = document.getElementById('results-state');
+const redirectState = document.getElementById('redirect-state');
 
 const resultsTitle = document.getElementById('results-title');
 const resultsSubtitle = document.getElementById('results-subtitle');
 const resultsTotalValue = document.getElementById('results-total-value');
 const debitosList = document.getElementById('debitos-list');
 const btnGerarLink = document.getElementById('btn-gerar-link');
+
+const redirectSubtitle = document.getElementById('redirect-subtitle');
+const copyPlacaVal = document.getElementById('copy-placa-val');
+const copyRenavamVal = document.getElementById('copy-renavam-val');
 
 const submitButton = form.querySelector('.btn-buscar');
 
@@ -55,8 +60,15 @@ function mostrarEstado(nome) {
   loadingState.classList.add('hidden');
   errorState.classList.add('hidden');
   resultsState.classList.add('hidden');
+  redirectState.classList.add('hidden');
 
-  const estados = { empty: emptyState, loading: loadingState, error: errorState, results: resultsState };
+  const estados = {
+    empty: emptyState,
+    loading: loadingState,
+    error: errorState,
+    results: resultsState,
+    redirect: redirectState
+  };
   estados[nome].classList.remove('hidden');
 }
 
@@ -130,10 +142,23 @@ form.addEventListener('submit', async (event) => {
       throw new Error(dados.erro || 'Falha ao consultar.');
     }
 
-    renderResultados(dados);
-    mostrarEstado('results');
-    if (typeof atualizarBadgeCreditos === 'function' && dados.creditosRestantes !== undefined) {
-      atualizarBadgeCreditos(dados.creditosRestantes);
+    if (dados.redirecionar) {
+      redirectSubtitle.textContent = `Placa ${dados.placa} · Renavam ${dados.renavam}`;
+      copyPlacaVal.textContent = dados.placa;
+      copyRenavamVal.textContent = dados.renavam;
+      
+      const linkSefaz = document.getElementById('link-sefaz');
+      if (linkSefaz) {
+        linkSefaz.href = `https://sistemas.sefaz.go.gov.br/snc/publico/ipva/form?documento=${dados.placa}&renavan=${dados.renavam}`;
+      }
+      
+      mostrarEstado('redirect');
+    } else {
+      renderResultados(dados);
+      mostrarEstado('results');
+      if (typeof atualizarBadgeCreditos === 'function' && dados.creditosRestantes !== undefined) {
+        atualizarBadgeCreditos(dados.creditosRestantes);
+      }
     }
   } catch (err) {
     errorMessage.textContent = err.message || 'Não foi possível concluir a consulta.';
@@ -142,6 +167,30 @@ form.addEventListener('submit', async (event) => {
     submitButton.disabled = false;
   }
 });
+
+function configurarBotaoCopia(btnId, valId) {
+  const btn = document.getElementById(btnId);
+  const valEl = document.getElementById(valId);
+  if (!btn || !valEl) return;
+  
+  btn.addEventListener('click', () => {
+    const texto = valEl.textContent;
+    navigator.clipboard.writeText(texto).then(() => {
+      const originalText = btn.textContent;
+      btn.textContent = 'Copiado!';
+      btn.classList.add('copied');
+      setTimeout(() => {
+        btn.textContent = originalText;
+        btn.classList.remove('copied');
+      }, 1500);
+    }).catch(err => {
+      console.error('Erro ao copiar texto:', err);
+    });
+  });
+}
+
+configurarBotaoCopia('btn-copy-placa', 'copy-placa-val');
+configurarBotaoCopia('btn-copy-renavam', 'copy-renavam-val');
 
 atualizarPreviewPlaca();
 carregarSessao();

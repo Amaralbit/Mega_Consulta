@@ -92,9 +92,71 @@
         <p class="results-footer-note">(próxima etapa — ainda não implementada nesta versão de teste)</p>
       </div>
     </div>
-  </section>
 
-  <p class="mock-banner">⚠ Protótipo de teste — os débitos exibidos são dados <strong>mockados</strong>, não vêm do Detran-GO real.</p>
+    <div class="redirect-state hidden" id="redirect-state">
+      <div class="redirect-header">
+        <h2>Consulta Gratuita (Redirecionamento)</h2>
+        <p id="redirect-subtitle" class="results-subtitle"></p>
+      </div>
+
+      <div class="redirect-instructions">
+        <p class="instruction-lead">
+          Para realizar a consulta de forma 100% gratuita e segura, copie os dados abaixo e acesse os portais oficiais do estado de Goiás:
+        </p>
+        
+        <ol class="steps-list">
+          <li>
+            <div class="step-content">
+              <span class="step-num">1</span>
+              <div class="step-body">
+                <p class="step-title">Copie as informações do veículo</p>
+                <div class="copy-fields-row">
+                  <div class="copy-field-box">
+                    <span class="copy-label">Placa</span>
+                    <strong id="copy-placa-val" class="copy-value">-</strong>
+                    <button type="button" class="btn-copy" id="btn-copy-placa" aria-label="Copiar Placa">Copiar</button>
+                  </div>
+                  <div class="copy-field-box">
+                    <span class="copy-label">Renavam</span>
+                    <strong id="copy-renavam-val" class="copy-value">-</strong>
+                    <button type="button" class="btn-copy" id="btn-copy-renavam" aria-label="Copiar Renavam">Copiar</button>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </li>
+          
+          <li>
+            <div class="step-content">
+              <span class="step-num">2</span>
+              <div class="step-body">
+                <p class="step-title">Acesse os portais do governo</p>
+                <p class="step-desc">Selecione o portal oficial para consulta (links abrem em novas guias):</p>
+                <div class="redirect-actions-row">
+                  <a href="https://sistemas.sefaz.go.gov.br/snc/publico/ipva/form" target="_blank" class="btn-redirect-link btn-sefaz" id="link-sefaz">
+                    Consultar IPVA (SEFAZ-GO)
+                  </a>
+                  <a href="https://www.detran.go.gov.br/psw/" target="_blank" class="btn-redirect-link btn-detran" id="link-detran">
+                    Consultar Multas / Débitos (DETRAN-GO)
+                  </a>
+                </div>
+              </div>
+            </div>
+          </li>
+          
+          <li>
+            <div class="step-content">
+              <span class="step-num">3</span>
+              <div class="step-body">
+                <p class="step-title">Insira os dados e consulte</p>
+                <p class="step-desc">No portal oficial do governo, cole a Placa e o Renavam copiados e resolva o CAPTCHA de segurança.</p>
+              </div>
+            </div>
+          </li>
+        </ol>
+      </div>
+    </div>
+  </section>
 </main>
 
 <script src="session.js"></script>

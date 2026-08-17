@@ -70,6 +70,20 @@ app.post('/api/consulta', requireAuth, async (req, res) => {
     });
   }
 
+  const placaNormalizada = String(placa || '').toUpperCase().replace(/[^A-Z0-9]/g, '');
+  const renavamNormalizado = String(renavam || '').replace(/\D/g, '');
+
+  // Se não houver token configurado, a consulta automática fica desativada e redirecionamos o usuário
+  if (!process.env.INFOSIMPLES_TOKEN) {
+    return res.json({
+      redirecionar: true,
+      placa: placaNormalizada,
+      renavam: renavamNormalizado,
+      estado,
+      documento
+    });
+  }
+
   try {
     db.debitarCredito(req.session.userId, 'consulta');
   } catch (err) {
@@ -83,7 +97,12 @@ app.post('/api/consulta', requireAuth, async (req, res) => {
   }
 
   try {
-    const resultado = await consultarVeiculo({ estado, placa, renavam, documento });
+    const resultado = await consultarVeiculo({
+      estado,
+      placa: placaNormalizada,
+      renavam: renavamNormalizado,
+      documento
+    });
 
     db.registrarConsulta({
       userId: req.session.userId,

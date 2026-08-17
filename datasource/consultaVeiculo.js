@@ -83,23 +83,123 @@ function gerarDebitosMock(placaNormalizada, seed) {
   return debitos;
 }
 
+function formatarVencimentoParaISO(dataString) {
+  if (!dataString) return new Date().toISOString().slice(0, 10);
+  if (/^\d{4}-\d{2}-\d{2}$/.test(dataString)) return dataString;
+  const parts = String(dataString).split('/');
+  if (parts.length === 3) {
+    const [dia, mes, ano] = parts;
+    return `${ano}-${mes.padStart(2, '0')}-${dia.padStart(2, '0')}`;
+  }
+  return dataString;
+}
+
 async function consultarVeiculo({ estado, placa, renavam, documento }) {
-  // simula latência de uma consulta real (RPA costuma levar segundos, não ms)
-  await new Promise((resolve) => setTimeout(resolve, 700 + Math.random() * 500));
-
   const placaNormalizada = String(placa || '').toUpperCase().replace(/[^A-Z0-9]/g, '');
-  const seed = hashString(placaNormalizada + String(renavam || ''));
+  const renavamNormalizado = String(renavam || '').replace(/\D/g, '');
 
+  const token = process.env.INFOSIMPLES_TOKEN;
+
+  if (token) {
+    console.log(`[Consulta] Iniciando consulta real na InfoSimples (SEFAZ-GO) para Placa: ${placaNormalizada}, Renavam: ${renavamNormalizado}`);
+    
+    const params = new URLSearchParams({
+      token: token,
+      placa: placaNormalizada,
+      renavam: renavamNormalizado
+    });
+
+    try {
+      const response = await fetch(`https://api.infosimples.com/api/v1/consultas/sefaz/go/ipva?${params.toString()}`);
+      if (!response.ok) {
+        throw new Error(`Erro na chamada da API InfoSimples: Status ${response.status}`);
+      }
+
+      const resJson = await response.json();
+      
+      if (resJson.code !== 200) {
+        throw new Error(resJson.code_message || 'Erro desconhecido retornado pela API da InfoSimples.');
+      }
+
+      const dataObj = resJson.data && resJson.data[0];
+      if (!dataObj) {
+        throw new Error('Nenhum dado retornado para este veículo no portal da SEFAZ.');
+      }
+
+      const guias = dataObj.guias || [];
+      
+      // Filtra apenas guias não pagas, se houver indicador de situação
+      const guiasFiltradas = guias.filter(g => {
+        if (g.situacao) {
+          const sit = String(g.situacao).toLowerCase();
+          return !sit.includes('pago') && !sit.includes('quitado') && !sit.includes('baixado');
+        }
+        return true;
+      });
+
+      const debitos = guiasFiltradas.map(g => {
+        const desc = String(g.descricao || '').toLowerCase();
+        let tipo = 'IPVA';
+        if (desc.includes('licenciamento') || desc.includes('taxa')) {
+          tipo = 'Licenciamento';
+        } else if (desc.includes('multa') || desc.includes('infracao')) {
+          tipo = 'Multa';
+        }
+
+        const parcelamentoLabel = g.parcelamento || g.parcela || '';
+        const descricaoCompleta = g.descricao 
+          ? g.descricao 
+          : `IPVA ${g.exercicio || new Date().getFullYear()}${parcelamentoLabel ? ' - ' + parcelamentoLabel : ''}`;
+
+        let valorNum = 0;
+        if (g.normalizado_valor !== undefined) {
+          valorNum = Number(g.normalizado_valor);
+        } else if (g.valor !== undefined) {
+          valorNum = parseFloat(String(g.valor).replace(/\./g, '').replace(',', '.')) || 0;
+        }
+
+        return {
+          tipo,
+          descricao: descricaoCompleta,
+          vencimento: formatarVencimentoParaISO(g.vencimento),
+          valor: valorNum,
+          guia: g.codigo_barras || g.guia || 'Não informada'
+        };
+      });
+
+      const total = debitos.reduce((acc, d) => acc + d.valor, 0);
+
+      return {
+        estado,
+        placa: placaNormalizada,
+        renavam: renavamNormalizado,
+        debitos,
+        total: Number(total.toFixed(2)),
+        fonte: 'infosimples'
+      };
+    } catch (err) {
+      console.error('[Consulta] Erro ao integrar com InfoSimples:', err);
+      throw err;
+    }
+  }
+
+  // Fallback para dados Mockados caso não exista Token
+  console.log(`[Consulta] Sem token InfoSimples configurado. Retornando dados simulados (mock) para Placa: ${placaNormalizada}`);
+  
+  // simula latência de uma consulta real
+  await new Promise((resolve) => setTimeout(resolve, 800 + Math.random() * 400));
+
+  const seed = hashString(placaNormalizada + String(renavamNormalizado));
   const debitos = gerarDebitosMock(placaNormalizada, seed);
   const total = debitos.reduce((acc, d) => acc + d.valor, 0);
 
   return {
     estado,
     placa: placaNormalizada,
-    renavam,
+    renavam: renavamNormalizado,
     debitos,
     total: Number(total.toFixed(2)),
-    fonte: 'mock', // marcador só pra ficar óbvio no JSON que isso não é dado real ainda
+    fonte: 'mock',
   };
 }
 
