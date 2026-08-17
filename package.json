@@ -1,0 +1,14 @@
+{
+  "name": "mega-consultas",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Prototipo de consulta de pendencias veiculares (GO) - dados mockados para teste de UX",
+  "main": "server.js",
+  "scripts": {
+    "start": "node server.js",
+    "dev": "node server.js"
+  },
+  "dependencies": {
+    "express": "^4.19.2"
+  }
+}
