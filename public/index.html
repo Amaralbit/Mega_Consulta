@@ -1,165 +1,107 @@
 <!DOCTYPE html>
 <html lang="pt-BR">
 <head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Mega Consultas - Pendências do Veículo</title>
-<link rel="stylesheet" href="styles.css">
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Mega Consultas — Débitos de Veículo (GO)</title>
+  <link rel="stylesheet" href="styles.css" />
 </head>
 <body>
-<div class="top-bar"></div>
-<div class="user-bar" id="user-bar"></div>
+  <div class="page">
+    <header class="header">
+      <h1>Consulta de Pendências do Veículo</h1>
+      <p class="subtitle">Prepare os dados do seu veículo e vá direto ao portal oficial do Detran-GO conferir multas, IPVA e licenciamento.</p>
+    </header>
 
-<main class="page">
-  <header class="page-header">
-    <h1>Consulta de Pendências do Veículo</h1>
-    <p class="subtitle">Consulte multas, IPVA e débitos pendentes</p>
-  </header>
+    <main class="card">
+      <form id="form-consulta" class="form-consulta">
+        <div class="field field-estado">
+          <label for="estado">Estado</label>
+          <select id="estado" name="estado">
+            <option value="GO">GO</option>
+          </select>
+        </div>
 
-  <hr class="divider">
+        <div class="field field-placa">
+          <label for="placa">Placa</label>
+          <input type="text" id="placa" name="placa" placeholder="ABC1D23" maxlength="7" autocomplete="off" required />
+        </div>
 
-  <section class="search-card">
-    <form id="form-consulta" class="search-row" autocomplete="off">
-      <div class="field field-estado">
-        <select id="estado" name="estado">
-          <option value="GO">GO</option>
-        </select>
+        <div class="field field-renavam">
+          <label for="renavam">Renavam</label>
+          <input type="text" id="renavam" name="renavam" placeholder="Renavam" maxlength="11" inputmode="numeric" autocomplete="off" required />
+        </div>
+
+        <div class="field field-documento">
+          <label for="documento">CPF / CNPJ (opcional)</label>
+          <input type="text" id="documento" name="documento" placeholder="CPF / CNPJ (opcional)" autocomplete="off" />
+        </div>
+
+        <button type="submit" class="btn-buscar">
+          <span class="icon-search" aria-hidden="true"></span>
+          Preparar consulta
+        </button>
+      </form>
+
+      <div class="plate-preview-wrap">
+        <div class="plate-preview" id="plate-preview">
+          <div class="plate-top">
+            <span>MERCOSUL</span>
+            <span class="plate-flag">BRASIL</span>
+          </div>
+          <div class="plate-body" id="plate-body">SDM2J30</div>
+        </div>
       </div>
 
-      <div class="field field-placa">
-        <input id="placa" name="placa" type="text" placeholder="Placa" maxlength="7" required>
-      </div>
+      <section class="result-area">
+        <div class="state-box" id="empty-state">
+          <div class="state-icon">🔍</div>
+          <h2>Consulte um veículo</h2>
+          <p>Preencha os dados acima e clique em "Preparar consulta". Vamos te levar direto ao portal oficial do Detran-GO com os dados prontos pra colar.</p>
+        </div>
 
-      <div class="field field-renavam">
-        <input id="renavam" name="renavam" type="text" placeholder="Renavam" maxlength="11" required>
-      </div>
+        <div class="state-box hidden" id="error-state">
+          <div class="state-icon">⚠️</div>
+          <h2>Não deu certo</h2>
+          <p id="error-message"></p>
+        </div>
 
-      <div class="field field-documento">
-        <input id="documento" name="documento" type="text" placeholder="CPF / CNPJ (opcional)">
-      </div>
+        <div class="state-box redirect-box hidden" id="redirect-state">
+          <div class="state-icon">✅</div>
+          <h2>Tudo pronto!</h2>
+          <p id="redirect-subtitle" class="redirect-subtitle"></p>
 
-      <button type="submit" class="btn-buscar">
-        <span class="icon-search" aria-hidden="true"></span>
-        BUSCAR
-      </button>
-    </form>
-  </section>
+          <div class="copy-row">
+            <div class="copy-item">
+              <span class="copy-label">Placa</span>
+              <span class="copy-value" id="copy-placa-val"></span>
+              <button type="button" class="btn-copy" id="btn-copy-placa">Copiar</button>
+            </div>
+            <div class="copy-item">
+              <span class="copy-label">Renavam</span>
+              <span class="copy-value" id="copy-renavam-val"></span>
+              <button type="button" class="btn-copy" id="btn-copy-renavam">Copiar</button>
+            </div>
+          </div>
 
-  <div class="plate-preview-wrap">
-    <div class="plate-preview" id="plate-preview">
-      <div class="plate-top">
-        <span class="plate-tab plate-tab-mercosul">MERCOSUL</span>
-        <span class="plate-tab plate-tab-brasil">BRASIL</span>
-      </div>
-      <div class="plate-number" id="plate-number">AAA0A00</div>
-    </div>
+          <a id="link-portal-oficial" class="btn-portal" href="#" target="_blank" rel="noopener noreferrer">
+            Abrir portal oficial do Detran-GO ↗
+          </a>
+
+          <p class="disclaimer">
+            O resultado (multas, IPVA, licenciamento) aparece direto no site do governo — o portal usa reCAPTCHA e
+            não temos (nem tentamos ter) acesso automático a esses dados. Cole a placa e o renavam nos campos do
+            Detran-GO e resolva a verificação normalmente.
+          </p>
+        </div>
+      </section>
+    </main>
+
+    <footer class="footer">
+      <p>Mega Consultas é um assistente gratuito — não coletamos pagamento nem simulamos dados de débitos reais.</p>
+    </footer>
   </div>
 
-  <section class="result-area" id="result-area">
-    <div class="empty-state" id="empty-state">
-      <div class="empty-icon">
-        <span class="icon-search-lg" aria-hidden="true"></span>
-      </div>
-      <h2>Consulte um veículo</h2>
-      <p>Preencha os dados acima e clique em buscar para consultar multas, IPVA e débitos pendentes.</p>
-    </div>
-
-    <div class="loading-state hidden" id="loading-state">
-      <div class="spinner" aria-hidden="true"></div>
-      <p>Consultando débitos, aguarde…</p>
-    </div>
-
-    <div class="error-state hidden" id="error-state">
-      <p id="error-message">Não foi possível concluir a consulta.</p>
-    </div>
-
-    <div class="results-state hidden" id="results-state">
-      <div class="results-header">
-        <div>
-          <h2 id="results-title">Débitos encontrados</h2>
-          <p id="results-subtitle" class="results-subtitle"></p>
-        </div>
-        <div class="results-total">
-          <span class="results-total-label">Total em débitos</span>
-          <span class="results-total-value" id="results-total-value">R$ 0,00</span>
-        </div>
-      </div>
-      <ul class="debitos-list" id="debitos-list"></ul>
-      <div class="results-footer">
-        <button type="button" class="btn-gerar-link" id="btn-gerar-link" disabled>
-          Gerar Link de Pagamento
-        </button>
-        <p class="results-footer-note">(próxima etapa — ainda não implementada nesta versão de teste)</p>
-      </div>
-    </div>
-
-    <div class="redirect-state hidden" id="redirect-state">
-      <div class="redirect-header">
-        <h2>Consulta Gratuita (Redirecionamento)</h2>
-        <p id="redirect-subtitle" class="results-subtitle"></p>
-      </div>
-
-      <div class="redirect-instructions">
-        <p class="instruction-lead">
-          Para realizar a consulta de forma 100% gratuita e segura, copie os dados abaixo e acesse os portais oficiais do estado de Goiás:
-        </p>
-        
-        <ol class="steps-list">
-          <li>
-            <div class="step-content">
-              <span class="step-num">1</span>
-              <div class="step-body">
-                <p class="step-title">Copie as informações do veículo</p>
-                <div class="copy-fields-row">
-                  <div class="copy-field-box">
-                    <span class="copy-label">Placa</span>
-                    <strong id="copy-placa-val" class="copy-value">-</strong>
-                    <button type="button" class="btn-copy" id="btn-copy-placa" aria-label="Copiar Placa">Copiar</button>
-                  </div>
-                  <div class="copy-field-box">
-                    <span class="copy-label">Renavam</span>
-                    <strong id="copy-renavam-val" class="copy-value">-</strong>
-                    <button type="button" class="btn-copy" id="btn-copy-renavam" aria-label="Copiar Renavam">Copiar</button>
-                  </div>
-                </div>
-              </div>
-            </div>
-          </li>
-          
-          <li>
-            <div class="step-content">
-              <span class="step-num">2</span>
-              <div class="step-body">
-                <p class="step-title">Acesse os portais do governo</p>
-                <p class="step-desc">Selecione o portal oficial para consulta (links abrem em novas guias):</p>
-                <div class="redirect-actions-row">
-                  <a href="https://sistemas.sefaz.go.gov.br/snc/publico/ipva/form" target="_blank" class="btn-redirect-link btn-sefaz" id="link-sefaz">
-                    Consultar IPVA (SEFAZ-GO)
-                  </a>
-                  <a href="https://www.detran.go.gov.br/psw/" target="_blank" class="btn-redirect-link btn-detran" id="link-detran">
-                    Consultar Multas / Débitos (DETRAN-GO)
-                  </a>
-                </div>
-              </div>
-            </div>
-          </li>
-          
-          <li>
-            <div class="step-content">
-              <span class="step-num">3</span>
-              <div class="step-body">
-                <p class="step-title">Insira os dados e consulte</p>
-                <p class="step-desc">No portal oficial do governo, cole a Placa e o Renavam copiados e resolva o CAPTCHA de segurança.</p>
-              </div>
-            </div>
-          </li>
-        </ol>
-      </div>
-    </div>
-  </section>
-</main>
-
-<script src="session.js"></script>
-<script src="app.js"></script>
+  <script src="app.js"></script>
 </body>
 </html>
