@@ -92,14 +92,28 @@ form.addEventListener('submit', (event) => {
     mostrarEstado('error');
     return;
   }
+  if (!placa) {
+    errorMessage.textContent = 'Digite a placa do veículo.';
+    mostrarEstado('error');
+    placaInput.focus();
+    return;
+  }
   if (!placaValida(placa)) {
     errorMessage.textContent = 'Placa inválida. Use o formato ABC1234 ou ABC1D23.';
     mostrarEstado('error');
+    placaInput.focus();
+    return;
+  }
+  if (!renavam) {
+    errorMessage.textContent = 'Digite o renavam do veículo.';
+    mostrarEstado('error');
+    renavamInput.focus();
     return;
   }
   if (!renavamValido(renavam)) {
     errorMessage.textContent = 'Renavam inválido. Deve ter entre 9 e 11 dígitos.';
     mostrarEstado('error');
+    renavamInput.focus();
     return;
   }
 
