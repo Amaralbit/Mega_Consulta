@@ -1,0 +1,101 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Mega Consultas - Pendências do Veículo</title>
+<link rel="stylesheet" href="styles.css">
+</head>
+<body>
+<div class="top-bar"></div>
+
+<main class="page">
+  <header class="page-header">
+    <h1>Consulta de Pendências do Veículo</h1>
+    <p class="subtitle">Consulte multas, IPVA e débitos pendentes</p>
+  </header>
+
+  <hr class="divider">
+
+  <section class="search-card">
+    <form id="form-consulta" class="search-row" autocomplete="off">
+      <div class="field field-estado">
+        <select id="estado" name="estado">
+          <option value="GO">GO</option>
+        </select>
+      </div>
+
+      <div class="field field-placa">
+        <input id="placa" name="placa" type="text" placeholder="Placa" maxlength="7" required>
+      </div>
+
+      <div class="field field-renavam">
+        <input id="renavam" name="renavam" type="text" placeholder="Renavam" maxlength="11" required>
+      </div>
+
+      <div class="field field-documento">
+        <input id="documento" name="documento" type="text" placeholder="CPF / CNPJ (opcional)">
+      </div>
+
+      <button type="submit" class="btn-buscar">
+        <span class="icon-search" aria-hidden="true"></span>
+        BUSCAR
+      </button>
+    </form>
+  </section>
+
+  <div class="plate-preview-wrap">
+    <div class="plate-preview" id="plate-preview">
+      <div class="plate-top">
+        <span class="plate-tab plate-tab-mercosul">MERCOSUL</span>
+        <span class="plate-tab plate-tab-brasil">BRASIL</span>
+      </div>
+      <div class="plate-number" id="plate-number">AAA0A00</div>
+    </div>
+  </div>
+
+  <section class="result-area" id="result-area">
+    <div class="empty-state" id="empty-state">
+      <div class="empty-icon">
+        <span class="icon-search-lg" aria-hidden="true"></span>
+      </div>
+      <h2>Consulte um veículo</h2>
+      <p>Preencha os dados acima e clique em buscar para consultar multas, IPVA e débitos pendentes.</p>
+    </div>
+
+    <div class="loading-state hidden" id="loading-state">
+      <div class="spinner" aria-hidden="true"></div>
+      <p>Consultando débitos, aguarde…</p>
+    </div>
+
+    <div class="error-state hidden" id="error-state">
+      <p id="error-message">Não foi possível concluir a consulta.</p>
+    </div>
+
+    <div class="results-state hidden" id="results-state">
+      <div class="results-header">
+        <div>
+          <h2 id="results-title">Débitos encontrados</h2>
+          <p id="results-subtitle" class="results-subtitle"></p>
+        </div>
+        <div class="results-total">
+          <span class="results-total-label">Total em débitos</span>
+          <span class="results-total-value" id="results-total-value">R$ 0,00</span>
+        </div>
+      </div>
+      <ul class="debitos-list" id="debitos-list"></ul>
+      <div class="results-footer">
+        <button type="button" class="btn-gerar-link" id="btn-gerar-link" disabled>
+          Gerar Link de Pagamento
+        </button>
+        <p class="results-footer-note">(próxima etapa — ainda não implementada nesta versão de teste)</p>
+      </div>
+    </div>
+  </section>
+
+  <p class="mock-banner">⚠ Demo estático (GitHub Pages) — os débitos exibidos são dados <strong>mockados</strong>, gerados no próprio navegador. Não vêm do Detran-GO real.</p>
+</main>
+
+<script src="app.js"></script>
+</body>
+</html>
