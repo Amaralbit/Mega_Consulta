@@ -114,14 +114,27 @@ form.addEventListener('submit', async (event) => {
       body: JSON.stringify(payload),
     });
 
+    if (resp.status === 401) {
+      window.location.href = '/login.html';
+      return;
+    }
+
     const dados = await resp.json();
 
     if (!resp.ok) {
+      if (resp.status === 402) {
+        errorMessage.innerHTML = `${dados.erro} <a href="/conta.html">Comprar créditos</a>`;
+        mostrarEstado('error');
+        return;
+      }
       throw new Error(dados.erro || 'Falha ao consultar.');
     }
 
     renderResultados(dados);
     mostrarEstado('results');
+    if (typeof atualizarBadgeCreditos === 'function' && dados.creditosRestantes !== undefined) {
+      atualizarBadgeCreditos(dados.creditosRestantes);
+    }
   } catch (err) {
     errorMessage.textContent = err.message || 'Não foi possível concluir a consulta.';
     mostrarEstado('error');
@@ -131,3 +144,4 @@ form.addEventListener('submit', async (event) => {
 });
 
 atualizarPreviewPlaca();
+carregarSessao();

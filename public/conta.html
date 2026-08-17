@@ -1,0 +1,55 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Minha conta — Mega Consultas</title>
+<link rel="stylesheet" href="styles.css">
+</head>
+<body>
+<div class="top-bar"></div>
+<div class="user-bar" id="user-bar"></div>
+
+<main class="page">
+  <header class="page-header">
+    <h1>Minha conta</h1>
+    <p class="subtitle">Saldo de créditos, compra e histórico de uso.</p>
+  </header>
+
+  <hr class="divider">
+
+  <p class="auth-error hidden" id="erro-compra"></p>
+  <p class="auth-footer-note hidden" id="aviso-cancelada" style="text-align:left; margin-bottom: 16px;">
+    Compra cancelada — nenhum valor foi cobrado.
+  </p>
+
+  <div class="saldo-card">
+    <div>
+      <span class="saldo-label">Créditos disponíveis</span>
+      <div class="saldo-valor" id="saldo-valor">—</div>
+    </div>
+    <span class="subtitle">1 crédito = 1 consulta de veículo</span>
+  </div>
+
+  <h2 class="section-title">Comprar créditos</h2>
+  <div class="pacotes-grid" id="pacotes-grid">
+    <p class="subtitle">Carregando pacotes…</p>
+  </div>
+
+  <h2 class="section-title">Histórico</h2>
+  <div style="overflow-x:auto;">
+    <table class="historico-table">
+      <thead>
+        <tr><th>Data</th><th>Movimento</th><th>Motivo</th></tr>
+      </thead>
+      <tbody id="historico-body">
+        <tr><td colspan="3" class="subtitle">Carregando…</td></tr>
+      </tbody>
+    </table>
+  </div>
+</main>
+
+<script src="session.js"></script>
+<script src="conta.js"></script>
+</body>
+</html>

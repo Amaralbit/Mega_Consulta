@@ -17,13 +17,57 @@ no futuro. O front-end (`public/`) chama `POST /api/consulta` num backend Expres
 **`datasource/consultaVeiculo.js` é o único arquivo que precisa mudar** quando entrar
 uma fonte de dados real — hoje ele só gera débitos fictícios.
 
+Essa versão já é um SaaS mínimo: tem cadastro/login, saldo de créditos (1 crédito =
+1 consulta) e compra de créditos via Stripe Checkout. Cada usuário novo ganha alguns
+créditos grátis (`FREE_TRIAL_CREDITS`) pra testar sem pagar.
+
 Rodar localmente:
 
 ```bash
 npm install
+cp .env.example .env   # edite os valores, veja detalhes abaixo
 npm start
-# abre em http://localhost:3000
+# abre em http://localhost:3000 — vai pedir login/cadastro
 ```
+
+Requer **Node 22.5+** (usa o módulo nativo `node:sqlite` pra guardar usuários e
+créditos em `data/mega.db` — sem instalar banco nenhum à parte; o aviso
+`ExperimentalWarning: SQLite...` no console é esperado).
+
+### Autenticação e créditos
+
+- `db/index.js` — usuários, saldo de créditos e histórico (SQLite local).
+- `middleware/auth.js` — protege páginas (`/`, `/conta.html`) e rotas de API.
+- `routes/auth.js` — `/api/auth/signup`, `/login`, `/logout`, `/me`.
+- `routes/billing.js` — pacotes de crédito, Stripe Checkout e o webhook que
+  confirma o pagamento antes de creditar (nunca no redirect de sucesso, que o
+  usuário pode manipular).
+- `/api/consulta` agora exige login e debita 1 crédito por consulta (devolvido
+  automaticamente se a consulta falhar).
+
+Sessão usa a `MemoryStore` padrão do `express-session` — ótima pra rodar local,
+mas os logins somem se reiniciar o processo, e não funciona com múltiplas
+instâncias. Antes de ir pra produção, trocar por um store persistente (Redis,
+`connect-sqlite3` etc.) e definir um `SESSION_SECRET` forte.
+
+### Habilitar cobrança (Stripe)
+
+Sem `STRIPE_SECRET_KEY` no `.env`, a compra de créditos fica desabilitada (a
+página de conta mostra o motivo) — o resto do app funciona normalmente com os
+créditos grátis do cadastro.
+
+Pra testar pagamento de verdade (modo teste da Stripe):
+
+1. Pegue as chaves de teste em https://dashboard.stripe.com/test/apikeys e
+   coloque `STRIPE_SECRET_KEY` no `.env`.
+2. Instale a [Stripe CLI](https://stripe.com/docs/stripe-cli) e rode:
+   ```bash
+   stripe listen --forward-to localhost:3000/api/billing/webhook
+   ```
+   Isso imprime um `whsec_...` — coloque em `STRIPE_WEBHOOK_SECRET` no `.env`.
+3. Reinicie `npm start` e compre um pacote em `/conta.html` usando um
+   [cartão de teste da Stripe](https://stripe.com/docs/testing) (ex.:
+   `4242 4242 4242 4242`).
 
 ## 2. Versão estática (`docs/`) — demo publicado no GitHub Pages
 

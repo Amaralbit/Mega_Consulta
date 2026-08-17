@@ -424,3 +424,229 @@ body {
   .btn-buscar { width: 100%; justify-content: center; }
   .results-total { text-align: left; }
 }
+
+/* ---------- barra de usuário (topo, páginas logadas) ---------- */
+
+.user-bar {
+  max-width: 1040px;
+  margin: 0 auto;
+  padding: 10px 24px;
+  display: flex;
+  justify-content: flex-end;
+  align-items: center;
+  gap: 14px;
+  font-size: 13px;
+  color: var(--text-secondary);
+  border-bottom: 1px solid var(--border);
+}
+
+.user-bar a {
+  color: var(--accent);
+  text-decoration: none;
+  font-weight: 600;
+}
+.user-bar a:hover { text-decoration: underline; }
+
+.user-bar .credits-badge {
+  background: var(--muted-bg);
+  border-radius: 999px;
+  padding: 4px 12px;
+  font-weight: 700;
+  color: var(--text-primary);
+}
+
+.user-bar .btn-sair {
+  background: none;
+  border: none;
+  color: var(--text-secondary);
+  font-size: 13px;
+  cursor: pointer;
+  padding: 0;
+}
+.user-bar .btn-sair:hover { color: var(--danger); }
+
+/* ---------- páginas de autenticação (login/cadastro) ---------- */
+
+.auth-page {
+  max-width: 400px;
+  margin: 0 auto;
+  padding: 64px 24px;
+}
+
+.auth-card {
+  background: var(--card-bg);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 28px;
+  box-shadow: 0 1px 2px rgba(16, 24, 40, 0.04);
+}
+
+.auth-card h1 {
+  margin: 0 0 6px;
+  font-size: 22px;
+  font-weight: 700;
+}
+
+.auth-card .subtitle {
+  margin-bottom: 24px;
+}
+
+.auth-field {
+  margin-bottom: 16px;
+}
+
+.auth-field label {
+  display: block;
+  font-size: 13px;
+  font-weight: 600;
+  margin-bottom: 6px;
+}
+
+.auth-field input {
+  width: 100%;
+  height: 44px;
+  padding: 0 14px;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  font-size: 14px;
+  outline: none;
+  transition: border-color 0.15s, box-shadow 0.15s;
+}
+
+.auth-field input:focus {
+  border-color: var(--focus-ring);
+  box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.15);
+}
+
+.auth-field small {
+  display: block;
+  margin-top: 4px;
+  color: var(--text-secondary);
+  font-size: 12px;
+}
+
+.btn-primary {
+  width: 100%;
+  height: 44px;
+  background: var(--accent);
+  color: #fff;
+  border: none;
+  border-radius: 8px;
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background 0.15s;
+}
+.btn-primary:hover { background: var(--accent-hover); }
+.btn-primary:disabled { opacity: 0.6; cursor: not-allowed; }
+
+.auth-footer-note {
+  margin-top: 18px;
+  text-align: center;
+  font-size: 13px;
+  color: var(--text-secondary);
+}
+
+.auth-error {
+  margin: 0 0 16px;
+  color: var(--danger);
+  background: var(--danger-bg);
+  border: 1px solid var(--danger-border);
+  border-radius: 8px;
+  padding: 10px 14px;
+  font-size: 13px;
+}
+
+/* ---------- conta / créditos ---------- */
+
+.saldo-card {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 12px;
+  background: var(--muted-bg);
+  border-radius: var(--radius);
+  padding: 20px 24px;
+  margin-bottom: 28px;
+}
+
+.saldo-card .saldo-label {
+  font-size: 13px;
+  color: var(--text-secondary);
+}
+
+.saldo-card .saldo-valor {
+  font-size: 32px;
+  font-weight: 800;
+  color: var(--accent);
+}
+
+.pacotes-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+  gap: 14px;
+  margin-bottom: 32px;
+}
+
+.pacote-card {
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 20px;
+  text-align: center;
+}
+
+.pacote-card .pacote-label {
+  font-weight: 700;
+  margin-bottom: 6px;
+}
+
+.pacote-card .pacote-preco {
+  font-size: 22px;
+  font-weight: 800;
+  color: var(--accent);
+  margin-bottom: 14px;
+}
+
+.pacote-card button {
+  width: 100%;
+  height: 40px;
+  background: var(--accent);
+  color: #fff;
+  border: none;
+  border-radius: 8px;
+  font-weight: 600;
+  cursor: pointer;
+}
+.pacote-card button:hover { background: var(--accent-hover); }
+.pacote-card button:disabled { opacity: 0.6; cursor: not-allowed; }
+
+.historico-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 13px;
+}
+
+.historico-table th,
+.historico-table td {
+  text-align: left;
+  padding: 10px 12px;
+  border-bottom: 1px solid var(--border);
+}
+
+.historico-table th {
+  color: var(--text-secondary);
+  font-weight: 600;
+  font-size: 12px;
+  text-transform: uppercase;
+  letter-spacing: 0.02em;
+}
+
+.historico-table .delta-positivo { color: #15803d; font-weight: 700; }
+.historico-table .delta-negativo { color: var(--danger); font-weight: 700; }
+
+.section-title {
+  font-size: 15px;
+  font-weight: 700;
+  margin: 0 0 14px;
+}

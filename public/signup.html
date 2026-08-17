@@ -1,0 +1,38 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Criar conta — Mega Consultas</title>
+<link rel="stylesheet" href="styles.css">
+</head>
+<body>
+<div class="top-bar"></div>
+
+<main class="auth-page">
+  <div class="auth-card">
+    <h1>Criar conta</h1>
+    <p class="subtitle">Ganhe créditos grátis para testar a consulta.</p>
+
+    <p class="auth-error hidden" id="erro"></p>
+
+    <form id="form-signup" autocomplete="on">
+      <div class="auth-field">
+        <label for="email">E-mail</label>
+        <input id="email" name="email" type="email" required autocomplete="email">
+      </div>
+      <div class="auth-field">
+        <label for="password">Senha</label>
+        <input id="password" name="password" type="password" required minlength="8" autocomplete="new-password">
+        <small>Mínimo de 8 caracteres.</small>
+      </div>
+      <button type="submit" class="btn-primary" id="btn-criar">Criar conta</button>
+    </form>
+
+    <p class="auth-footer-note">Já tem conta? <a href="/login.html">Entrar</a></p>
+  </div>
+</main>
+
+<script src="signup.js"></script>
+</body>
+</html>
