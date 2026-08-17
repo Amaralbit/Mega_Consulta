@@ -15,6 +15,28 @@ const copyPlacaVal = document.getElementById('copy-placa-val');
 const copyRenavamVal = document.getElementById('copy-renavam-val');
 const linkPortalOficial = document.getElementById('link-portal-oficial');
 
+// URL oficial do Detran-GO onde o cidadão consulta débitos (IPVA, licenciamento,
+// multas) do veículo. É uma SPA protegida por reCAPTCHA — não automatizamos isso,
+// só levamos o usuário até lá com os dados prontos pra copiar.
+const PORTAL_OFICIAL_URL = 'https://www.detran.go.gov.br/psw/';
+
+function normalizarPlaca(placa) {
+  return String(placa || '').toUpperCase().replace(/[^A-Z0-9]/g, '');
+}
+
+function normalizarRenavam(renavam) {
+  return String(renavam || '').replace(/\D/g, '');
+}
+
+function placaValida(placa) {
+  // Aceita formato antigo (AAA9999) e Mercosul (AAA9A99)
+  return /^[A-Z]{3}\d[A-Z0-9]\d{2}$/.test(placa);
+}
+
+function renavamValido(renavam) {
+  return renavam.length >= 9 && renavam.length <= 11;
+}
+
 function mostrarEstado(nome) {
   emptyState.classList.add('hidden');
   errorState.classList.add('hidden');
@@ -25,13 +47,13 @@ function mostrarEstado(nome) {
 }
 
 placaInput.addEventListener('input', () => {
-  const valor = placaInput.value.toUpperCase().replace(/[^A-Z0-9]/g, '');
+  const valor = normalizarPlaca(placaInput.value);
   placaInput.value = valor;
   plateBody.textContent = valor || 'SDM2J30';
 });
 
 renavamInput.addEventListener('input', () => {
-  renavamInput.value = renavamInput.value.replace(/\D/g, '');
+  renavamInput.value = normalizarRenavam(renavamInput.value);
 });
 
 function configurarBotaoCopia(btnId, valId) {
@@ -58,37 +80,33 @@ function configurarBotaoCopia(btnId, valId) {
 configurarBotaoCopia('btn-copy-placa', 'copy-placa-val');
 configurarBotaoCopia('btn-copy-renavam', 'copy-renavam-val');
 
-form.addEventListener('submit', async (event) => {
+form.addEventListener('submit', (event) => {
   event.preventDefault();
 
-  const payload = {
-    estado: estadoInput.value,
-    placa: placaInput.value,
-    renavam: renavamInput.value,
-    documento: documentoInput.value,
-  };
+  const estado = estadoInput.value;
+  const placa = normalizarPlaca(placaInput.value);
+  const renavam = normalizarRenavam(renavamInput.value);
 
-  try {
-    const resp = await fetch('/api/preparar-consulta', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(payload),
-    });
-
-    const dados = await resp.json();
-
-    if (!resp.ok) {
-      throw new Error(dados.erro || 'Não foi possível preparar a consulta.');
-    }
-
-    redirectSubtitle.textContent = `Placa ${dados.placa} · Renavam ${dados.renavam}`;
-    copyPlacaVal.textContent = dados.placa;
-    copyRenavamVal.textContent = dados.renavam;
-    linkPortalOficial.href = dados.portalOficialUrl;
-
-    mostrarEstado('redirect');
-  } catch (err) {
-    errorMessage.textContent = err.message || 'Não foi possível preparar a consulta.';
+  if (estado !== 'GO') {
+    errorMessage.textContent = 'Por enquanto só oferecemos suporte a veículos emplacados em Goiás (GO).';
     mostrarEstado('error');
+    return;
   }
+  if (!placaValida(placa)) {
+    errorMessage.textContent = 'Placa inválida. Use o formato ABC1234 ou ABC1D23.';
+    mostrarEstado('error');
+    return;
+  }
+  if (!renavamValido(renavam)) {
+    errorMessage.textContent = 'Renavam inválido. Deve ter entre 9 e 11 dígitos.';
+    mostrarEstado('error');
+    return;
+  }
+
+  redirectSubtitle.textContent = `Placa ${placa} · Renavam ${renavam}`;
+  copyPlacaVal.textContent = placa;
+  copyRenavamVal.textContent = renavam;
+  linkPortalOficial.href = PORTAL_OFICIAL_URL;
+
+  mostrarEstado('redirect');
 });

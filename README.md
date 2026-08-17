@@ -34,7 +34,17 @@ npm start
 
 Abre em `http://localhost:3000`.
 
+## Deploy (GitHub Pages)
+
+O site é 100% estático — toda a validação de placa/renavam roda no navegador (`docs/app.js`), sem backend nem
+segredo nenhum. Por isso ele é publicado direto pelo **GitHub Pages**, servindo a pasta `docs/` da branch `main`:
+
+👉 https://amaralbit.github.io/Mega_Consulta/
+
+Qualquer push na `main` que altere `docs/` atualiza o site publicado automaticamente (pode levar 1–2 minutos).
+
 ## Stack
 
-Node.js + Express (apenas para servir a página e validar os dados) + HTML/CSS/JS puro no front-end. Sem
-banco de dados, sem login, sem cobrança — não há nada para pagar ou manter.
+HTML/CSS/JS puro (sem framework) na pasta `docs/`, que é tanto o front-end publicado no GitHub Pages quanto o
+que o `server.js` (Express) serve localmente. Sem banco de dados, sem login, sem cobrança — não há nada para
+pagar ou manter.
