@@ -23,10 +23,34 @@ const resultsTotalValue = document.getElementById('results-total-value');
 const debitosList = document.getElementById('debitos-list');
 const resultsAviso = document.getElementById('results-aviso');
 
-// URL oficial do Detran-GO onde o cidadão consulta débitos (IPVA, licenciamento,
-// multas) do veículo. É uma SPA protegida por reCAPTCHA — não automatizamos isso,
-// só levamos o usuário até lá com os dados prontos pra copiar.
-const PORTAL_OFICIAL_URL = 'https://www.detran.go.gov.br/psw/';
+// URL oficial de cada estado onde o cidadão consulta débitos (IPVA,
+// licenciamento, multas) do veículo. Muitos são SPAs protegidas por
+// reCAPTCHA — não automatizamos isso, só levamos o usuário até lá com os
+// dados prontos pra copiar. Espelha datasource/ipvaEstados.js — usado quando
+// não há backend disponível pra responder (ex.: GitHub Pages estático), já
+// que aí ninguém devolve o `portalOficialUrl` calculado no servidor.
+const PORTAIS_OFICIAIS = {
+  GO: 'https://www.detran.go.gov.br/psw/',
+  AL: 'https://ipvaonline.sefaz.al.gov.br/index.php',
+  AM: 'http://online.sefaz.am.gov.br/ipva/ipva.asp',
+  BA: 'https://servicos.sefaz.ba.gov.br/sistemas/IPVAA/Modulos/IPVAA/valor_ipva.aspx',
+  CE: 'https://ipva.sefaz.ce.gov.br/#/impostos/emitir-dae',
+  DF: 'https://ww1.receita.fazenda.df.gov.br/emissao-segunda-via/ipva',
+  MG: 'https://buscar-renavam-ipva-digital.fazenda.mg.gov.br/buscar-renavam/',
+  MS: 'https://servicos.efazenda.ms.gov.br/ipvapublico/Home',
+  MT: 'https://www.sefaz.mt.gov.br/ipva/emissaoguia/emitir',
+  PA: 'https://app.sefa.pa.gov.br/servicos-ipva/debitos/initPesquisaVeiculos.action',
+  PB: 'https://www.sefaz.pb.gov.br/servirtual/ipva/consultar-debitos',
+  PI: 'http://webas.sefaz.pi.gov.br/darweb/faces/views/ipva/ipva.xhtml',
+  PR: 'https://www.contribuinte.fazenda.pr.gov.br/ipva/faces/home',
+  RJ: 'https://darj-ipva-web.fazenda.rj.gov.br/darj-ipva-web/#/',
+  RO: 'https://ipva.sefin.ro.gov.br/',
+  TO: 'http://www.sefaz2.to.gov.br/ipva/dare.php',
+};
+
+function portalOficialDoEstado(estado) {
+  return PORTAIS_OFICIAIS[estado] || `https://www.google.com/search?q=sefaz+${estado}+ipva+consulta+d%C3%A9bitos`;
+}
 
 function normalizarPlaca(placa) {
   return String(placa || '').toUpperCase().replace(/[^A-Z0-9]/g, '');
@@ -170,11 +194,11 @@ function configurarBotaoCopia(btnId, valId) {
 configurarBotaoCopia('btn-copy-placa', 'copy-placa-val');
 configurarBotaoCopia('btn-copy-renavam', 'copy-renavam-val');
 
-function mostrarRedirect(placa, renavam) {
+function mostrarRedirect(placa, renavam, portalOficialUrl) {
   redirectSubtitle.textContent = `Placa ${placa} · Renavam ${renavam}`;
   copyPlacaVal.textContent = placa;
   copyRenavamVal.textContent = renavam;
-  linkPortalOficial.href = PORTAL_OFICIAL_URL;
+  linkPortalOficial.href = portalOficialUrl;
   mostrarEstado('redirect');
 }
 
@@ -186,8 +210,8 @@ form.addEventListener('submit', async (event) => {
   const renavam = normalizarRenavam(renavamInput.value);
   const documento = documentoInput.value;
 
-  if (estado !== 'GO') {
-    errorMessage.textContent = 'Por enquanto só oferecemos suporte a veículos emplacados em Goiás (GO).';
+  if (!estado) {
+    errorMessage.textContent = 'Selecione o estado do veículo.';
     mostrarEstado('error');
     return;
   }
@@ -223,6 +247,6 @@ form.addEventListener('submit', async (event) => {
     renderResultados(dados);
     mostrarEstado('results');
   } else {
-    mostrarRedirect(placa, renavam);
+    mostrarRedirect(placa, renavam, dados?.portalOficialUrl || portalOficialDoEstado(estado));
   }
 });

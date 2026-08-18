@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Mega Consultas — Débitos de Veículo (GO)</title>
+  <title>Mega Consultas — Débitos de Veículo (Brasil)</title>
   <link rel="icon" type="image/png" href="assets/logo-mega.png" />
   <link rel="apple-touch-icon" href="assets/logo-mega.png" />
   <link rel="preconnect" href="https://fonts.googleapis.com" />
@@ -19,9 +19,9 @@
     </div>
 
     <header class="header">
-      <span class="brand-badge">Consulta veicular · Goiás</span>
+      <span class="brand-badge">Consulta veicular · Brasil</span>
       <h1>Consulta de Pendências do Veículo</h1>
-      <p class="subtitle">Prepare os dados do seu veículo e vá direto ao portal oficial do Detran-GO conferir multas, IPVA e licenciamento.</p>
+      <p class="subtitle">Escolha o estado, informe placa e renavam do seu veículo e a gente já busca o IPVA em aberto — ou te leva direto ao portal oficial pra conferir multas e licenciamento.</p>
     </header>
 
     <main class="card">
@@ -29,7 +29,33 @@
         <div class="field field-estado">
           <label for="estado">Estado</label>
           <select id="estado" name="estado">
-            <option value="GO">GO</option>
+            <option value="AC">AC</option>
+            <option value="AL">AL</option>
+            <option value="AM">AM</option>
+            <option value="AP">AP</option>
+            <option value="BA">BA</option>
+            <option value="CE">CE</option>
+            <option value="DF">DF</option>
+            <option value="ES">ES</option>
+            <option value="GO" selected>GO</option>
+            <option value="MA">MA</option>
+            <option value="MG">MG</option>
+            <option value="MS">MS</option>
+            <option value="MT">MT</option>
+            <option value="PA">PA</option>
+            <option value="PB">PB</option>
+            <option value="PE">PE</option>
+            <option value="PI">PI</option>
+            <option value="PR">PR</option>
+            <option value="RJ">RJ</option>
+            <option value="RN">RN</option>
+            <option value="RO">RO</option>
+            <option value="RR">RR</option>
+            <option value="RS">RS</option>
+            <option value="SC">SC</option>
+            <option value="SE">SE</option>
+            <option value="SP">SP</option>
+            <option value="TO">TO</option>
           </select>
         </div>
 
@@ -97,8 +123,8 @@
           <ul class="debitos-list" id="debitos-list"></ul>
           <p class="disclaimer results-aviso hidden" id="results-aviso"></p>
           <p class="disclaimer">
-            Esses valores vêm direto do Detran-GO via consulta autorizada. Pra pagar, use o boleto/PIX (DAE)
-            oficial de cada guia — este site não processa pagamento de débito estadual.
+            Esses valores vêm direto da Sefaz/Detran do seu estado via consulta autorizada. Pra pagar, use o
+            boleto/PIX (DAE/DARJ/guia) oficial de cada débito — este site não processa pagamento de débito estadual.
           </p>
         </div>
 
@@ -121,13 +147,13 @@
           </div>
 
           <a id="link-portal-oficial" class="btn-portal" href="#" target="_blank" rel="noopener noreferrer">
-            Abrir portal oficial do Detran-GO ↗
+            Abrir portal oficial do seu estado ↗
           </a>
 
           <p class="disclaimer">
-            O resultado (multas, IPVA, licenciamento) aparece direto no site do governo — o portal usa reCAPTCHA e
-            não temos (nem tentamos ter) acesso automático a esses dados. Cole a placa e o renavam nos campos do
-            Detran-GO e resolva a verificação normalmente.
+            O resultado completo (multas, IPVA, licenciamento) aparece direto no site do governo — muitos portais
+            estaduais usam reCAPTCHA e não temos (nem tentamos ter) acesso automático a esses dados. Cole a placa e
+            o renavam nos campos do site oficial e resolva a verificação normalmente.
           </p>
         </div>
       </section>

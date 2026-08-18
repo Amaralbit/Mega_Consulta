@@ -9,7 +9,7 @@ try {
 
 const express = require('express');
 const path = require('path');
-const { consultarVeiculo } = require('./datasource/consultaVeiculo');
+const { consultarVeiculo, portalOficialDoEstado } = require('./datasource/consultaVeiculo');
 
 const app = express();
 const PORT = process.env.PORT || 3000;
@@ -21,7 +21,12 @@ const PORT = process.env.PORT || 3000;
 // simplesmente não existe, então o front-end cai sozinho no modo gratuito
 // de redirecionamento. Rodando com `node server.js`, o comportamento é
 // idêntico até você preencher as credenciais da InfoSimples no .env.
-const PORTAL_OFICIAL_URL = 'https://www.detran.go.gov.br/psw/';
+//
+// Fallback pra estados sem produto IPVA mapeado (ver ipvaEstados.js) — não
+// existe um portal único de "IPVA nacional", então manda pra uma busca.
+function portalOficialFallback(estado) {
+  return portalOficialDoEstado(estado) || `https://www.google.com/search?q=sefaz+${estado}+ipva+consulta+d%C3%A9bitos`;
+}
 
 app.use(express.json());
 app.use(express.static(path.join(__dirname, 'docs')));
@@ -35,15 +40,17 @@ function normalizarRenavam(renavam) {
 }
 
 app.post('/api/consulta', async (req, res) => {
-  const estado = req.body?.estado;
+  const estado = String(req.body?.estado || '').toUpperCase();
   const placa = normalizarPlaca(req.body?.placa);
   const renavam = normalizarRenavam(req.body?.renavam);
+  const documento = String(req.body?.documento || '').replace(/\D/g, '');
+  const portalOficialUrl = portalOficialFallback(estado);
 
   try {
-    const resultado = await consultarVeiculo({ estado, placa, renavam });
+    const resultado = await consultarVeiculo({ estado, placa, renavam, documento });
 
     if (!resultado.configurado) {
-      return res.json({ redirecionar: true, estado, placa, renavam, portalOficialUrl: PORTAL_OFICIAL_URL });
+      return res.json({ redirecionar: true, estado, placa, renavam, portalOficialUrl });
     }
 
     res.json(resultado);
@@ -52,7 +59,7 @@ app.post('/api/consulta', async (req, res) => {
     // Mesmo com credencial configurada, se a consulta real falhar (fora do
     // ar, certificado vencido etc.) caímos no modo gratuito em vez de
     // quebrar a experiência do usuário.
-    res.json({ redirecionar: true, estado, placa, renavam, portalOficialUrl: PORTAL_OFICIAL_URL });
+    res.json({ redirecionar: true, estado, placa, renavam, portalOficialUrl });
   }
 });
 
