@@ -1,3 +1,12 @@
+// Carrega o .env pro process.env antes de qualquer coisa que dependa dele
+// (nativo do Node — sem precisar da dependência `dotenv`). Se o arquivo não
+// existir (ex: produção configurando as variáveis direto no host), ignora.
+try {
+  process.loadEnvFile();
+} catch {
+  // .env ausente é normal em produção — as variáveis vêm do host nesse caso.
+}
+
 const express = require('express');
 const path = require('path');
 const { consultarVeiculo } = require('./datasource/consultaVeiculo');
