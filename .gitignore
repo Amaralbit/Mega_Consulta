@@ -4,3 +4,6 @@ npm-debug.log*
 *.log
 certs/*
 !certs/.gitkeep
+
+.vercel
+.env*
