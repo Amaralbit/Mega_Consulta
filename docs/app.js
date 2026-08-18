@@ -17,6 +17,7 @@ const copyPlacaVal = document.getElementById('copy-placa-val');
 const copyRenavamVal = document.getElementById('copy-renavam-val');
 const linkPortalOficial = document.getElementById('link-portal-oficial');
 
+const resultsTitle = document.getElementById('results-title');
 const resultsSubtitle = document.getElementById('results-subtitle');
 const resultsTotalValue = document.getElementById('results-total-value');
 const debitosList = document.getElementById('debitos-list');
@@ -76,6 +77,9 @@ function renderResultados(dados) {
   resultsSubtitle.textContent = `Placa ${dados.placa} · Renavam ${dados.renavam}`;
   resultsTotalValue.textContent = formatarMoeda(dados.total);
 
+  const semPendencia = dados.debitos.length === 0;
+  resultsTitle.textContent = semPendencia ? 'Nenhuma pendência encontrada' : 'Débitos encontrados';
+
   if (dados.aviso) {
     resultsAviso.textContent = `⚠️ ${dados.aviso}`;
     resultsAviso.classList.remove('hidden');
@@ -84,6 +88,15 @@ function renderResultados(dados) {
   }
 
   debitosList.innerHTML = '';
+
+  if (semPendencia) {
+    const li = document.createElement('li');
+    li.className = 'debito-item debito-vazio';
+    li.textContent = '🎉 Não encontramos débito em aberto para esse veículo nesta consulta.';
+    debitosList.appendChild(li);
+    return;
+  }
+
   dados.debitos.forEach((debito) => {
     const li = document.createElement('li');
     li.className = 'debito-item';

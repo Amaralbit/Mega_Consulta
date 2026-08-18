@@ -95,6 +95,13 @@ function itensParaDebitos(itens) {
   }));
 }
 
+// Código que a InfoSimples usa quando a automação rodou certinho mas não
+// achou nenhum débito pra placa/renavam informados — isso NÃO é uma falha
+// (a consulta real aconteceu e até consome crédito); é um resultado válido
+// de "zero pendências". Tratar como erro esconderia do usuário que a busca
+// real funcionou.
+const CODE_SEM_DEBITO = 612;
+
 async function chamarInfoSimples(url, params) {
   const resposta = await fetch(url, {
     method: 'POST',
@@ -107,6 +114,9 @@ async function chamarInfoSimples(url, params) {
   }
 
   const json = await resposta.json();
+  if (json.code === CODE_SEM_DEBITO) {
+    return null; // consulta rodou, só não achou débito — não é erro
+  }
   if (json.code !== 200) {
     throw new Error(json.code_message || 'Erro desconhecido retornado pela InfoSimples.');
   }
@@ -129,7 +139,7 @@ async function consultarDebitosCompleto({ placa, renavam }) {
     renavam,
   });
 
-  const debitos = itensParaDebitos(dados.debitos || dados.guias || []);
+  const debitos = dados ? itensParaDebitos(dados.debitos || dados.guias || []) : [];
   return { debitos, escopo: 'completo' };
 }
 
@@ -140,7 +150,7 @@ async function consultarApenasIpva({ placa, renavam }) {
     renavam,
   });
 
-  const debitos = itensParaDebitos(dados.guias || dados.debitos || []);
+  const debitos = dados ? itensParaDebitos(dados.guias || dados.debitos || []) : [];
   return {
     debitos,
     escopo: 'ipva',

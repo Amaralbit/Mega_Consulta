@@ -456,6 +456,12 @@ body {
   gap: 10px;
 }
 
+.debito-item.debito-vazio {
+  justify-content: center;
+  text-align: center;
+  color: var(--text-muted, inherit);
+}
+
 .debito-item {
   display: flex;
   justify-content: space-between;
