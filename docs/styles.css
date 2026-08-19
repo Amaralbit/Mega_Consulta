@@ -30,7 +30,56 @@ body {
   -webkit-font-smoothing: antialiased;
 }
 
+/* Chuva de código no fundo — decorativa, fica atrás de todo o conteúdo.
+   Colunas alternam entre caindo (cima→baixo) e subindo (baixo→cima). */
+.bg-rain {
+  position: fixed;
+  inset: 0;
+  overflow: hidden;
+  z-index: 0;
+  pointer-events: none;
+}
+
+.rain-col {
+  position: absolute;
+  top: 0;
+  width: 20px;
+  font-family: "Courier New", monospace;
+  font-weight: 700;
+  font-size: 13px;
+  line-height: 1.5;
+  white-space: pre;
+  text-align: center;
+  will-change: transform;
+}
+
+@keyframes rain-fall {
+  from {
+    transform: translateY(-60vh);
+  }
+  to {
+    transform: translateY(60vh);
+  }
+}
+
+@keyframes rain-rise {
+  from {
+    transform: translateY(60vh);
+  }
+  to {
+    transform: translateY(-60vh);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .rain-col {
+    animation: none !important;
+  }
+}
+
 .page {
+  position: relative;
+  z-index: 1;
   max-width: 780px;
   margin: 0 auto;
   padding: 0 20px 60px;

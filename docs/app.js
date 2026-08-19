@@ -160,6 +160,43 @@ async function tentarConsultaReal({ estado, placa, renavam, documento }) {
   }
 }
 
+// Chuva de código decorativa no fundo — colunas de caracteres alternando
+// entre caindo (cima→baixo) e subindo (baixo→cima), nas cores do site.
+function iniciarChuvaDeCodigo() {
+  const container = document.getElementById('bg-rain');
+  if (!container) return;
+
+  const CARACTERES = '01{}[]<>/=;#MEGA';
+  const CORES = ['var(--red)', 'var(--ink)'];
+  const TOTAL_COLUNAS = 26;
+
+  function textoAleatorio(tamanho) {
+    let texto = '';
+    for (let i = 0; i < tamanho; i++) {
+      texto += CARACTERES[Math.floor(Math.random() * CARACTERES.length)] + '\n';
+    }
+    return texto;
+  }
+
+  for (let i = 0; i < TOTAL_COLUNAS; i++) {
+    const col = document.createElement('div');
+    col.className = 'rain-col';
+    col.textContent = textoAleatorio(16 + Math.floor(Math.random() * 14));
+    col.style.left = `${(i / TOTAL_COLUNAS) * 100}%`;
+    col.style.color = CORES[i % 2];
+    col.style.opacity = (0.08 + Math.random() * 0.1).toFixed(2);
+
+    const caindo = i % 2 === 0;
+    const duracao = 9 + Math.random() * 10;
+    const atraso = -Math.random() * duracao; // começa "no meio" do ciclo, não tudo sincronizado
+    col.style.animation = `${caindo ? 'rain-fall' : 'rain-rise'} ${duracao}s linear ${atraso}s infinite`;
+
+    container.appendChild(col);
+  }
+}
+
+iniciarChuvaDeCodigo();
+
 placaInput.addEventListener('input', () => {
   const valor = normalizarPlaca(placaInput.value);
   placaInput.value = valor;
