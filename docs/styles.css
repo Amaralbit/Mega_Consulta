@@ -269,7 +269,16 @@ body {
 }
 
 .plate-flag {
+  display: flex;
+  align-items: center;
+  gap: 3px;
   color: #fde047;
+}
+
+.plate-flag-icon {
+  width: 13px;
+  height: auto;
+  border-radius: 1px;
 }
 
 .plate-body {
