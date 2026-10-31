@@ -73,7 +73,8 @@ function formatarVencimentoParaISO(dataString) {
 function classificarTipo(descricao) {
   const desc = String(descricao || '').toLowerCase();
   if (desc.includes('licenciamento') || desc.includes('taxa')) return 'Licenciamento';
-  if (desc.includes('multa') || desc.includes('infra')) return 'Multa';
+  if (desc.includes('multa') || desc.includes('infra') || desc.includes('infração')) return 'Multa';
+  if (desc.includes('seguro') || desc.includes('dpvat')) return 'Seguro';
   return 'IPVA';
 }
 
@@ -83,7 +84,8 @@ function primeiroValorNumerico(obj, chaves) {
     if (bruto === undefined || bruto === null || bruto === '') continue;
     const numero = Number(bruto);
     if (!Number.isNaN(numero)) return numero;
-    const viaBRL = parseFloat(String(bruto).replace(/\./g, '').replace(',', '.'));
+    const textoNumerico = String(bruto).replace(/[^\d,.-]/g, '');
+    const viaBRL = parseFloat(textoNumerico.replace(/\./g, '').replace(',', '.'));
     if (!Number.isNaN(viaBRL)) return viaBRL;
   }
   return 0;
@@ -96,17 +98,127 @@ function primeiroTextoValido(obj, chaves) {
   return null;
 }
 
-// Usado só pro produto completo de Goiás (DETRAN/GO Débitos), cujo schema já
-// é conhecido e fixo — descricao/vencimento/valor/codigo_barras diretos.
-function itensParaDebitos(itens) {
-  return itens.map((item) => ({
-    tipo: classificarTipo(item.descricao),
-    descricao: item.descricao || `Débito ${item.exercicio || ''}`.trim(),
-    vencimento: formatarVencimentoParaISO(item.vencimento),
-    valor: primeiroValorNumerico(item, ['normalizado_valor', 'valor']),
-    guia: item.codigo_barras || item.guia || null,
-    boletoUrl: item.boleto_pdf_url || null,
-  }));
+function comoLista(valor) {
+  if (Array.isArray(valor)) return valor;
+  if (valor && typeof valor === 'object') return Object.values(valor);
+  return valor == null ? [] : [valor];
+}
+
+function itemDebito(tipo, descricao, origem, chavesValor, chavesVencimento = []) {
+  const objeto = origem && typeof origem === 'object' ? origem : {};
+  const valor = primeiroValorNumerico(objeto, chavesValor);
+  if (valor <= 0) return null;
+  return {
+    tipo,
+    descricao: primeiroTextoValido(objeto, ['descricao_popular', 'descricao', 'descricao_cota_unica', 'descricao_nf_goiania', 'nome']) || descricao,
+    vencimento: formatarVencimentoParaISO(primeiroTextoValido(objeto, chavesVencimento)),
+    valor,
+    guia: primeiroTextoValido(objeto, ['codigo_barras', 'linha_digitavel', 'guia']) || null,
+    boletoUrl: primeiroTextoValido(objeto, ['boleto_pdf_url', 'boleto_url']) || null,
+  };
+}
+
+function coletarItensDeInfracoes(origem) {
+  const itens = [];
+  const categorias = origem && typeof origem === 'object' && !Array.isArray(origem)
+    ? Object.entries(origem)
+    : [['Infrações', origem]];
+
+  for (const [categoria, valor] of categorias) {
+    for (const linha of comoLista(valor)) {
+      const item = itemDebito(
+        'Multa',
+        `Infração ${categoria}`,
+        linha,
+        ['normalizado_valor', 'valor', 'valor_a_pagar', 'valor_multa'],
+        ['normalizado_data_vencimento', 'data_vencimento', 'vencimento', 'data'],
+      );
+      if (item) itens.push(item);
+    }
+  }
+  return itens;
+}
+
+// O produto DETRAN/GO Débitos atual retorna um resumo em `debitos_veiculo`,
+// além de listas separadas para dívida ativa, infrações e outros débitos.
+// Mantemos compatibilidade com os nomes antigos `debitos` e `guias`.
+function itensParaDebitos(dados) {
+  const brutoResumo = dados.debitos_veiculo || dados.resumo_debitos || {};
+  const resumo = Array.isArray(brutoResumo) ? (brutoResumo[0] || {}) : brutoResumo;
+  const itens = [];
+  const ipva = itemDebito(
+    'IPVA',
+    resumo.descricao_cota_unica || resumo.descricao_popular || 'IPVA',
+    resumo,
+    ['normalizado_ipva_valor', 'ipva_valor', 'normalizado_valor_original_ipva', 'nomralizado_valor_original_ipva', 'valor_original_ipva'],
+    ['normalizado_data_vencimento', 'data_vencimento'],
+  );
+  if (ipva) itens.push(ipva);
+
+  const licenciamento = itemDebito(
+    'Licenciamento',
+    'Licenciamento anual',
+    resumo,
+    ['normalizado_licenciamento', 'licenciamento'],
+    ['normalizado_data_vencimento', 'data_vencimento'],
+  );
+  if (licenciamento) itens.push(licenciamento);
+
+  const seguro = itemDebito(
+    'Seguro',
+    'Seguro obrigatório',
+    resumo,
+    ['normalizado_seguro_obrigatorio', 'seguro_obrigatorio'],
+    ['normalizado_data_vencimento', 'data_vencimento'],
+  );
+  if (seguro) itens.push(seguro);
+
+  const infracoes = dados.infracoes ?? resumo.infracoes;
+  const multas = coletarItensDeInfracoes(infracoes);
+  if (multas.length) {
+    itens.push(...multas);
+  } else {
+    const totalInfracoes = primeiroValorNumerico(resumo, ['normalizado_infracoes']);
+    if (totalInfracoes > 0) itens.push({ tipo: 'Multa', descricao: 'Total de infrações', vencimento: null, valor: totalInfracoes, guia: null, boletoUrl: null });
+  }
+
+  for (const linha of comoLista(dados.divida_ativa)) {
+    const item = itemDebito('Dívida ativa', 'Dívida ativa', linha,
+      ['normalizado_valor', 'valor', 'normalizado_valor_total', 'valor_total'],
+      ['normalizado_data_vencimento', 'data_vencimento', 'vencimento', 'data']);
+    if (item) itens.push(item);
+  }
+
+  for (const linha of comoLista(dados.outros_debitos)) {
+    const item = itemDebito(classificarTipo(linha?.descricao || linha?.status || 'Outros débitos'),
+      linha?.descricao || linha?.status || 'Outros débitos', linha,
+      ['normalizado_valor', 'valor'], ['data', 'data_vencimento', 'vencimento']);
+    if (item) itens.push(item);
+  }
+
+  const legado = comoLista(dados.debitos || dados.guias);
+  if (itens.length === 0 && legado.length) {
+    for (const linha of legado) {
+      const item = itemDebito(classificarTipo(linha?.descricao), linha?.descricao || `Débito ${linha?.exercicio || ''}`.trim(), linha,
+        ['normalizado_valor', 'valor'], ['normalizado_data_vencimento', 'data_vencimento', 'vencimento']);
+      if (item) itens.push(item);
+    }
+  }
+
+  const totalInformado = primeiroValorNumerico(dados, ['normalizado_total', 'total']) ||
+    primeiroValorNumerico(resumo, ['normalizado_valor_total', 'valor_total']);
+  const totalMapeado = Number(itens.reduce((soma, item) => soma + item.valor, 0).toFixed(2));
+  if (totalInformado > totalMapeado + 0.01) {
+    itens.push({
+      tipo: 'Outros débitos',
+      descricao: 'Demais débitos incluídos no total informado pela consulta',
+      vencimento: null,
+      valor: Number((totalInformado - totalMapeado).toFixed(2)),
+      guia: null,
+      boletoUrl: null,
+    });
+  }
+  return itens;
 }
 
 // Usado pelos produtos IPVA-only de cada estado (datasource/ipvaEstados.js).
@@ -199,8 +311,29 @@ async function consultarDebitosCompletoGO({ placa, renavam }) {
     renavam,
   });
 
-  const debitos = dados ? itensParaDebitos(dados.debitos || dados.guias || []) : [];
-  return { debitos, escopo: 'completo' };
+  const debitos = dados ? itensParaDebitos(dados) : [];
+  const resumoBruto = dados?.debitos_veiculo || {};
+  const resumo = Array.isArray(resumoBruto) ? (resumoBruto[0] || {}) : resumoBruto;
+  const temCampoLicenciamento = Object.prototype.hasOwnProperty.call(resumo, 'normalizado_licenciamento') ||
+    Object.prototype.hasOwnProperty.call(resumo, 'licenciamento');
+  const dadosVeiculo = dados?.veiculo || dados?.dados_veiculo || {};
+  const veiculo = dados ? {
+    marcaModelo: primeiroTextoValido(dados, ['marca_modelo', 'marca_modelo_veiculo', 'descricao_veiculo']) || primeiroTextoValido(dadosVeiculo, ['marca_modelo', 'marca_modelo_veiculo', 'descricao_veiculo']) || null,
+    ano: primeiroTextoValido(dados, ['ano_modelo', 'ano_fabricacao', 'ano']) || primeiroTextoValido(dadosVeiculo, ['ano_modelo', 'ano_fabricacao', 'ano']) || null,
+    cor: primeiroTextoValido(dados, ['cor']) || primeiroTextoValido(dadosVeiculo, ['cor']) || null,
+    chassi: primeiroTextoValido(dados, ['chassi']) || primeiroTextoValido(dadosVeiculo, ['chassi']) || null,
+    proprietario: primeiroTextoValido(dados, ['proprietario', 'nome_proprietario', 'proprietario_nome']) || primeiroTextoValido(dadosVeiculo, ['proprietario', 'nome_proprietario', 'proprietario_nome']) || null,
+    municipio: primeiroTextoValido(dados, ['municipio', 'cidade_uf', 'cidade']) || primeiroTextoValido(dadosVeiculo, ['municipio', 'cidade_uf', 'cidade']) || null,
+    situacao: primeiroTextoValido(resumo, ['situacao']) || primeiroTextoValido(dados, ['situacao', 'status']) || null,
+  } : null;
+  return {
+    debitos,
+    escopo: 'completo',
+    veiculo,
+    aviso: !temCampoLicenciamento
+      ? 'A consulta não informou o campo de licenciamento; não estimamos esse valor.'
+      : '',
+  };
 }
 
 async function consultarIpvaEstado(estado, { placa, renavam, documento }) {
@@ -218,6 +351,7 @@ async function consultarIpvaEstado(estado, { placa, renavam, documento }) {
     aviso: trazLicenciamento
       ? 'Este teste traz IPVA e licenciamento. Multas de trânsito exigem um produto pago à parte.'
       : 'Este teste traz só o IPVA. Multas de trânsito e licenciamento exigem um produto pago à parte (com credencial de despachante, onde disponível).',
+    veiculo: dados?.veiculo || null,
   };
 }
 
@@ -234,7 +368,7 @@ async function consultarVeiculo({ estado, placa, renavam, documento }) {
     return { configurado: false };
   }
 
-  const { debitos, escopo, aviso } =
+  const { debitos, escopo, aviso, veiculo } =
     estado === 'GO' && despachanteConfigurado()
       ? await consultarDebitosCompletoGO({ placa, renavam })
       : await consultarIpvaEstado(estado, { placa, renavam, documento });
@@ -246,6 +380,7 @@ async function consultarVeiculo({ estado, placa, renavam, documento }) {
     estado,
     placa,
     renavam,
+    veiculo: veiculo || null,
     debitos,
     total,
     escopo,

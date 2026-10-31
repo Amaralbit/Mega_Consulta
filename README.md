@@ -10,6 +10,12 @@ e escolhe automaticamente o mais completo que estiver configurado:
 - **Modo completo (preparado, pago):** com credencial de despachante configurada, mostra IPVA + licenciamento +
   multas de verdade, dentro do próprio site.
 
+Quando uma consulta real retorna dados, o botão **Gerar PA2 / salvar como PDF** abre um relatório imprimível com
+os dados disponíveis do veículo, os débitos discriminados e o total. O navegador permite salvar esse relatório
+como PDF. Se a fonte não devolver licenciamento, o PA2 avisa e não inventa valor. Guias só aparecem quando a API
+retorna uma referência ou URL oficial. O PA2 é um relatório informativo interno, não substitui a DUA/guia emitida
+pelos órgãos estaduais.
+
 Não há chave nem interruptor manual pra escolher o modo: o front-end (`docs/app.js`) tenta consultar o backend
 (`POST /api/consulta`) e, se ele não existir, não responder, ou não estiver configurado, cai sozinho no modo
 gratuito. Isso também é por que o **GitHub Pages continua 100% grátis mesmo depois desta preparação** — lá não
@@ -21,8 +27,8 @@ O portal oficial (`detran.go.gov.br/psw`) é uma SPA protegida por **Google reCA
 API pública e gratuita para consultar débitos veiculares de Goiás — furar esse captcha não é uma linha que este
 projeto cruza, nem grátis nem pago.
 
-O jeito legítimo de ter os dados reais é usar um provedor pago que já tem credencial de despachante autorizado
-(login + senha do Detran-GO + certificado digital PKCS12) — é isso que o modo real, já preparado, espera.
+O jeito legítimo de ter os dados reais é usar um provedor pago e as credenciais autorizadas exigidas pelo serviço
+(login + senha do Detran-GO + certificado digital PKCS12) — é isso que o modo real espera.
 
 ## Ativando o modo real (InfoSimples)
 
@@ -52,8 +58,10 @@ Exige credencial de despachante credenciado no Detran-GO (CPF + senha do sistema
 3. Com as 5 variáveis configuradas, o sistema usa automaticamente o modo completo em vez do IPVA-only.
 
 **Em ambos os casos:** confirme a URL exata do endpoint e o formato esperado dos parâmetros no painel da sua
-conta antes de usar em produção — os valores padrão em `datasource/consultaVeiculo.js` são os documentados
-publicamente pela InfoSimples, mas não foram testados contra uma conta real. E isso só funciona em algo que
+conta antes de usar em produção — os endpoints padrão em `datasource/consultaVeiculo.js` são os documentados
+publicamente pela InfoSimples, mas esta integração não foi testada contra uma conta real. O mapeamento do produto
+completo aceita os campos atuais `debitos_veiculo`, `infracoes`, `divida_ativa` e `outros_debitos`, incluindo
+licenciamento quando ele for retornado. E isso só funciona em algo que
 rode `server.js` de verdade (local, ou um host Node como Render/Vercel/Railway) — **GitHub Pages não roda
 backend**, então lá o site continua no modo gratuito de redirecionamento mesmo com o `.env` configurado em
 outro lugar.
@@ -82,7 +90,7 @@ necessário hospedar `server.js` em outro lugar.
 - `docs/` — front-end (HTML/CSS/JS puro), publicado no GitHub Pages e também servido localmente pelo `server.js`.
 - `server.js` — Express; serve `docs/` como estático e expõe `POST /api/consulta`, que decide entre o modo real
   e o modo gratuito.
-- `datasource/consultaVeiculo.js` — único módulo com a integração InfoSimples; inativo até as credenciais
+- `datasource/consultaVeiculo.js` — módulo com a integração InfoSimples; inativo até as credenciais
   estarem configuradas.
 
 Sem banco de dados, sem login, sem cobrança do usuário final — não há nada pra pagar ou manter além da

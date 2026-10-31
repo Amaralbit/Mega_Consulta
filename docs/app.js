@@ -22,6 +22,8 @@ const resultsSubtitle = document.getElementById('results-subtitle');
 const resultsTotalValue = document.getElementById('results-total-value');
 const debitosList = document.getElementById('debitos-list');
 const resultsAviso = document.getElementById('results-aviso');
+const btnGerarPa2 = document.getElementById('btn-gerar-pa2');
+let ultimoResultado = null;
 
 // URL oficial de cada estado onde o cidadão consulta débitos (IPVA,
 // licenciamento, multas) do veículo. Muitos são SPAs protegidas por
@@ -98,6 +100,7 @@ function formatarData(iso) {
 }
 
 function renderResultados(dados) {
+  ultimoResultado = dados;
   resultsSubtitle.textContent = `Placa ${dados.placa} · Renavam ${dados.renavam}`;
   resultsTotalValue.textContent = formatarMoeda(dados.total);
 
@@ -136,13 +139,115 @@ function renderResultados(dados) {
   });
 }
 
+function escaparHtml(valor) {
+  return String(valor ?? '').replace(/[&<>"']/g, (caractere) => ({
+    '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;',
+  })[caractere]);
+}
+
+function gerarPa2(dados) {
+  const relatorio = window.open('', '_blank');
+  if (!relatorio) {
+    errorMessage.textContent = 'O navegador bloqueou a janela do PA2. Permita pop-ups para este site e tente novamente.';
+    mostrarEstado('error');
+    return;
+  }
+
+  const veiculo = dados.veiculo || {};
+  const debitos = Array.isArray(dados.debitos) ? dados.debitos : [];
+  const linhas = debitos.length
+    ? debitos.map((debito) => {
+      let guiaOficial = '';
+      try {
+        const destino = new URL(debito.boletoUrl || '');
+        if (destino.protocol === 'https:') guiaOficial = `<a href="${escaparHtml(destino.href)}">Abrir guia oficial</a>`;
+      } catch {}
+      const linhaDigitavel = debito.guia ? `<small>Referência da guia: ${escaparHtml(debito.guia)}</small>` : '';
+      return `
+      <tr>
+        <td><span class="tipo">${escaparHtml(debito.tipo || 'Débito')}</span></td>
+        <td>${escaparHtml(debito.descricao || '—')}<br>${linhaDigitavel} ${guiaOficial}</td>
+        <td>${escaparHtml(debito.vencimento ? formatarData(debito.vencimento) : '—')}</td>
+        <td class="valor">${escaparHtml(formatarMoeda(debito.valor))}</td>
+      </tr>`;
+    }).join('')
+    : '<tr><td colspan="4" class="sem-debitos">Nenhum débito foi retornado nesta consulta.</td></tr>';
+
+  const camposVeiculo = [
+    ['Proprietário / usuário', veiculo.proprietario || dados.proprietario],
+    ['CPF / CNPJ', dados.documento], ['Marca / modelo', veiculo.marcaModelo], ['Ano', veiculo.ano], ['Cor', veiculo.cor],
+    ['Município', veiculo.municipio], ['Chassi', veiculo.chassi], ['Situação', veiculo.situacao],
+  ].filter(([, valor]) => valor);
+  const total = Number(dados.total ?? debitos.reduce((soma, debito) => soma + Number(debito.valor || 0), 0));
+  const dataConsulta = new Intl.DateTimeFormat('pt-BR', { dateStyle: 'short', timeStyle: 'short' }).format(new Date());
+  const avisoEscopo = dados.escopo === 'ipva'
+    ? '<p class="aviso">Consulta limitada a IPVA. Este PA2 não representa multas ou licenciamento que não tenham sido retornados pela fonte.</p>'
+    : '';
+  const aviso = dados.aviso ? `<p class="aviso">${escaparHtml(dados.aviso)}</p>` : '';
+
+  relatorio.document.open();
+  relatorio.document.write(`<!doctype html>
+    <html lang="pt-BR"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+    <title>PA2-${escaparHtml(dados.placa || 'veiculo')}</title>
+    <style>
+      @page { size: A4; margin: 14mm; }
+      * { box-sizing: border-box; }
+      body { margin: 0; color: #20252c; font: 12px Arial, Helvetica, sans-serif; }
+      .toolbar { display:flex; justify-content:flex-end; margin:0 0 16px; }
+      .toolbar button { border:0; border-radius:6px; padding:11px 18px; color:#fff; background:#a61920; font-weight:700; cursor:pointer; }
+      header { display:flex; align-items:flex-start; justify-content:space-between; border-bottom:3px solid #a61920; padding:0 0 12px; }
+      .marca { color:#a61920; font-size:12px; font-weight:700; letter-spacing:1.4px; text-transform:uppercase; }
+      h1 { margin:6px 0 3px; font-size:21px; }
+      .sub { margin:0; color:#66717c; }
+      .codigo { text-align:right; color:#66717c; font-size:10px; line-height:1.6; }
+      section { margin-top:18px; }
+      h2 { margin:0 0 9px; font-size:12px; letter-spacing:.5px; text-transform:uppercase; }
+      .veiculo { display:grid; grid-template-columns:repeat(3,1fr); gap:8px; }
+      .campo { min-height:47px; padding:8px 10px; border:1px solid #dce0e5; border-radius:5px; }
+      .campo b { display:block; margin-bottom:4px; color:#68727d; font-size:9px; text-transform:uppercase; }
+      .placa { font-size:16px; font-weight:800; letter-spacing:1px; }
+      table { width:100%; border-collapse:collapse; }
+      th { padding:8px 7px; color:#fff; background:#252b32; text-align:left; font-size:9px; text-transform:uppercase; }
+      td { padding:8px 7px; border-bottom:1px solid #e2e5e9; vertical-align:top; }
+      td.valor { text-align:right; white-space:nowrap; font-weight:700; }
+      .tipo { color:#a61920; font-size:9px; font-weight:700; text-transform:uppercase; }
+      small { color:#66717c; font-size:9px; }
+      a { color:#165da8; font-size:10px; font-weight:700; }
+      .sem-debitos { padding:16px; color:#66717c; text-align:center; }
+      .total { display:flex; justify-content:space-between; align-items:center; margin-top:10px; padding:12px; background:#f3f4f6; font-size:14px; font-weight:800; }
+      .aviso { margin:10px 0 0; padding:9px 10px; border:1px solid #e7d899; background:#fff9df; color:#655300; line-height:1.45; }
+      footer { margin-top:24px; padding-top:9px; border-top:1px solid #dce0e5; color:#66717c; font-size:9px; line-height:1.5; }
+      @media print { .toolbar { display:none; } body { print-color-adjust:exact; -webkit-print-color-adjust:exact; } tr { break-inside:avoid; } }
+    </style></head><body>
+    <div class="toolbar"><button onclick="window.print()">Salvar / imprimir PA2</button></div>
+    <header><div><div class="marca">Mega Despachante Soft</div><h1>PA2 · Pesquisa de débitos veiculares</h1><p class="sub">Relatório informativo da consulta do veículo</p></div>
+    <div class="codigo"><b>PA2-${escaparHtml(dados.placa || '')}</b><br>Emitido em ${escaparHtml(dataConsulta)}<br>UF: ${escaparHtml(dados.estado || 'GO')}</div></header>
+    <section><h2>Identificação do veículo</h2><div class="veiculo">
+      <div class="campo"><b>Placa</b><span class="placa">${escaparHtml(dados.placa || '—')}</span></div>
+      <div class="campo"><b>RENAVAM</b>${escaparHtml(dados.renavam || '—')}</div>
+      ${camposVeiculo.map(([titulo, valor]) => `<div class="campo"><b>${escaparHtml(titulo)}</b>${escaparHtml(valor)}</div>`).join('')}
+    </div></section>
+    <section><h2>Débitos localizados</h2><table><thead><tr><th>Tipo</th><th>Descrição</th><th>Vencimento</th><th style="text-align:right">Valor</th></tr></thead><tbody>${linhas}</tbody></table>
+    <div class="total"><span>Total informado nesta consulta</span><span>${escaparHtml(formatarMoeda(total))}</span></div></section>
+    ${avisoEscopo}${aviso}
+    <footer>Fonte consultada: ${escaparHtml(dados.fonte || 'consulta autorizada')} · Resultado sujeito a atualização pelo órgão responsável. Este relatório é informativo e não substitui extratos, guias de pagamento nem documento oficial do órgão consultado. Confirme os valores e a situação do veículo nos canais oficiais antes de efetuar qualquer pagamento.</footer>
+    </body></html>`);
+  relatorio.document.close();
+  relatorio.focus();
+  window.setTimeout(() => relatorio.print(), 300);
+}
+
+btnGerarPa2?.addEventListener('click', () => {
+  if (ultimoResultado) gerarPa2(ultimoResultado);
+});
+
 // Tenta consulta real via backend (só existe quando rodando com `node
 // server.js` E com a InfoSimples configurada no .env). Em qualquer outra
 // situação — GitHub Pages estático, backend fora do ar, não configurado —
 // cai automaticamente no modo gratuito de redirecionamento.
 async function tentarConsultaReal({ estado, placa, renavam, documento }) {
   const controller = new AbortController();
-  const timeout = setTimeout(() => controller.abort(), 4000);
+  const timeout = setTimeout(() => controller.abort(), 45000);
 
   try {
     const resp = await fetch('/api/consulta', {
@@ -151,8 +256,9 @@ async function tentarConsultaReal({ estado, placa, renavam, documento }) {
       body: JSON.stringify({ estado, placa, renavam, documento }),
       signal: controller.signal,
     });
-    if (!resp.ok) return null;
-    return await resp.json();
+    const dados = await resp.json();
+    if (!resp.ok) return { erro: dados.erro || 'A consulta não foi concluída.' };
+    return dados;
   } catch (err) {
     return null; // sem backend disponível (ex.: GitHub Pages) — segue o fluxo gratuito
   } finally {
@@ -281,8 +387,12 @@ form.addEventListener('submit', async (event) => {
   const dados = await tentarConsultaReal({ estado, placa, renavam, documento });
 
   if (dados && dados.debitos) {
+    dados.documento = documento;
     renderResultados(dados);
     mostrarEstado('results');
+  } else if (dados?.erro) {
+    errorMessage.textContent = dados.erro;
+    mostrarEstado('error');
   } else {
     mostrarRedirect(placa, renavam, dados?.portalOficialUrl || portalOficialDoEstado(estado));
   }

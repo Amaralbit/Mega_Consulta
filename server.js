@@ -56,10 +56,10 @@ app.post('/api/consulta', async (req, res) => {
     res.json(resultado);
   } catch (err) {
     console.error('[Consulta] Erro ao consultar InfoSimples:', err);
-    // Mesmo com credencial configurada, se a consulta real falhar (fora do
-    // ar, certificado vencido etc.) caímos no modo gratuito em vez de
-    // quebrar a experiência do usuário.
-    res.json({ redirecionar: true, estado, placa, renavam, portalOficialUrl });
+    res.status(502).json({
+      erro: 'Não foi possível concluir a consulta autorizada. Confira o token, as credenciais e o certificado da InfoSimples e tente novamente.',
+      portalOficialUrl,
+    });
   }
 });
 

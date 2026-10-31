@@ -582,6 +582,27 @@ body {
   margin-bottom: 12px !important;
 }
 
+.btn-pa2 {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 44px;
+  margin: 0 0 14px;
+  padding: 0 18px;
+  border: 0;
+  border-radius: var(--radius-sm);
+  background: var(--ink);
+  color: #fff;
+  font: inherit;
+  font-size: 13px;
+  font-weight: 800;
+  cursor: pointer;
+}
+
+.btn-pa2:hover {
+  background: var(--red);
+}
+
 .hidden {
   display: none !important;
 }
